@@ -86,6 +86,51 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          asr_reminder: boolean
+          created_at: string
+          daily_reminder_time: string | null
+          dhuhr_reminder: boolean
+          fajr_reminder: boolean
+          id: string
+          isha_reminder: boolean
+          maghrib_reminder: boolean
+          prayer_reminders: boolean
+          ramadan_activities: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asr_reminder?: boolean
+          created_at?: string
+          daily_reminder_time?: string | null
+          dhuhr_reminder?: boolean
+          fajr_reminder?: boolean
+          id?: string
+          isha_reminder?: boolean
+          maghrib_reminder?: boolean
+          prayer_reminders?: boolean
+          ramadan_activities?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asr_reminder?: boolean
+          created_at?: string
+          daily_reminder_time?: string | null
+          dhuhr_reminder?: boolean
+          fajr_reminder?: boolean
+          id?: string
+          isha_reminder?: boolean
+          maghrib_reminder?: boolean
+          prayer_reminders?: boolean
+          ramadan_activities?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       nourania_lessons: {
         Row: {
           audio_url: string | null
@@ -221,6 +266,36 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
           updated_at?: string
           user_id?: string
         }
