@@ -94,12 +94,16 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
       }
     },
     onSuccess: (_, request) => {
-      toast({ title: `Leçon ${request.lesson?.lesson_number || ''} validée pour ${request.profile?.full_name || 'l\'élève'}` });
+      toast({
+        title: '✅ Leçon validée, niveau suivant débloqué !',
+        description: `Leçon ${request.lesson?.lesson_number || ''} validée pour ${request.profile?.full_name || 'l\'élève'}`,
+      });
       queryClient.invalidateQueries({ queryKey: ['admin-nourania-validations'] });
       queryClient.invalidateQueries({ queryKey: ['admin-pending-nourania-count'] });
     },
-    onError: () => {
-      toast({ title: 'Erreur lors de la validation', variant: 'destructive' });
+    onError: (err: any) => {
+      console.error('Erreur validation nourania:', err);
+      toast({ title: 'Erreur lors de la validation', description: err?.message || 'Veuillez réessayer.', variant: 'destructive' });
     },
   });
 
