@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { Home, LogOut, Mail, Shield, Trophy, CalendarCheck } from 'lucide-react';
+import { Home, LogOut, Mail, Trophy, CalendarCheck } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import MessagingDialog from '@/components/messaging/MessagingDialog';
 import NewMessageNotification from '@/components/messaging/NewMessageNotification';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import AdminNotificationCenter from '@/components/admin/AdminNotificationCenter';
 
 interface HeaderProps {
   title?: string;
@@ -22,26 +21,9 @@ const Header = ({
 }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signOut, isAdmin, user } = useAuth();
+  const { signOut, isAdmin } = useAuth();
   const [showMessaging, setShowMessaging] = useState(false);
   const { unreadCount, hasNewMessage, clearNewMessageFlag } = useUnreadMessages();
-
-  // Admin: count recently completed homework (last 24h)
-  const { data: pendingHomeworkCount = 0 } = useQuery({
-    queryKey: ['admin-pending-homework-count'],
-    queryFn: async () => {
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { count, error } = await supabase
-        .from('homework_assignments')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'completed')
-        .gte('completed_at', since);
-      if (error) return 0;
-      return count || 0;
-    },
-    enabled: !!user && isAdmin,
-    refetchInterval: 30000,
-  });
 
   const handleLogout = async () => {
     await signOut();
@@ -72,7 +54,7 @@ const Header = ({
             </h1>
           </div>
 
-          {/* Right: Classement, Présence, Home, Admin (if admin), Logout */}
+          {/* Right: Classement, Présence, Messaging, Home, Admin (if admin), Logout */}
           <div className="flex items-center gap-1">
             <Button 
               variant="ghost" 
@@ -90,7 +72,7 @@ const Header = ({
             >
               <CalendarCheck className="h-5 w-5" />
             </Button>
-            {/* Envelope (Messaging) - just left of Home */}
+            {/* Envelope (Messaging) */}
             <Button 
               variant="ghost" 
               size="icon" 
@@ -118,22 +100,8 @@ const Header = ({
                 <Home className="h-5 w-5" />
               </Button>
             )}
-            {/* Admin icon - only visible for admins */}
-            {isAdmin && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/admin')} 
-                className="text-primary-foreground hover:bg-primary-foreground/10 relative"
-              >
-                <Shield className="h-5 w-5" />
-                {pendingHomeworkCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 border-2 border-primary animate-pulse">
-                    {pendingHomeworkCount > 9 ? '9+' : pendingHomeworkCount}
-                  </Badge>
-                )}
-              </Button>
-            )}
+            {/* Admin notification center - only visible for admins */}
+            {isAdmin && <AdminNotificationCenter />}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10">
