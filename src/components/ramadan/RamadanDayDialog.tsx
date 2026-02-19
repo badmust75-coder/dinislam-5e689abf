@@ -444,7 +444,18 @@ const RamadanDayDialog = ({
               {sortedQuizzes.length > 0 && (
                 <Button
                   onClick={() => {
-                    resetState();
+                    setCurrentVideoIdx(0);
+                    setCurrentQuestionIdx(0);
+                    setSelectedAnswers([]);
+                    setAttemptCount(0);
+                    setAnswerResult(null);
+                    setShowExplanation(false);
+                    setCorrectCount(0);
+                    setWrongCount(0);
+                    setAnsweredCount(0);
+                    setAllFirstAttempt(true);
+                    setIsPlaying(false);
+                    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
                     setIsTrainingMode(true);
                     setStep('quiz');
                   }}
