@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Home, LogOut, Mail, Trophy, CalendarCheck } from 'lucide-react';
+import UserSettingsDialog from '@/components/settings/UserSettingsDialog';
 import AccountSwitcher from '@/components/auth/AccountSwitcher';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -104,6 +105,7 @@ const Header = ({
             )}
             {/* Admin notification center - only visible for admins */}
             {isAdmin && <AdminNotificationCenter />}
+            <UserSettingsDialog />
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10">
