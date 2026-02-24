@@ -218,15 +218,34 @@ const SouratePathView = ({
               })}
             </div>
 
-            {/* Vertical connector line to next row */}
-            {rowIndex < rows.length - 1 && (
-              <div
-                className={cn('flex', isLeftToRight ? 'justify-end pr-6' : 'justify-start pl-6')}
-                style={{ marginTop: -ROW_GAP + 4, marginBottom: 4 }}
-              >
-                <div className="w-1 h-6 rounded-full bg-border" />
-              </div>
-            )}
+            {/* Curved connector to next row */}
+            {rowIndex < rows.length - 1 && (() => {
+              // Determine if connector goes from right side to right side, left to left, etc.
+              const nextIsLeftToRight = (rowIndex + 1) % 2 === 0;
+              const connectorOnRight = isLeftToRight;
+              
+              // Check state of last node in current row and first in next for line coloring
+              const lastNodeInRow = isLeftToRight ? row[row.length - 1] : row[0];
+              const isCompleted = lastNodeInRow?.type === 'sourate' && lastNodeInRow.sourate &&
+                (() => { const dbId = dbSourates.get(lastNodeInRow.sourate!.number); return dbId ? sourateProgress.get(dbId)?.is_validated : false; })();
+
+              return (
+                <div
+                  className={cn('flex', connectorOnRight ? 'justify-end pr-8' : 'justify-start pl-8')}
+                  style={{ marginTop: -8, marginBottom: 0, height: 28 }}
+                >
+                  <svg width="24" height="28" viewBox="0 0 24 28" className="overflow-visible">
+                    <path
+                      d={connectorOnRight ? "M12 0 Q12 14 12 28" : "M12 0 Q12 14 12 28"}
+                      fill="none"
+                      stroke={isCompleted ? 'hsl(142, 70%, 45%)' : 'hsl(var(--border))'}
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </div>
+              );
+            })()}
           </div>
         );
       })}
