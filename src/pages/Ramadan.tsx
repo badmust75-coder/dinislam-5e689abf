@@ -39,6 +39,16 @@ interface Quiz {
   question_order: number;
 }
 
+interface DayActivity {
+  id: string;
+  day_id: number;
+  type: string;
+  file_url: string;
+  file_name: string;
+  file_type: string | null;
+  order_index: number | null;
+}
+
 interface UserProgress {
   id: string;
   day_id: number;
@@ -100,6 +110,18 @@ const Ramadan = () => {
         .order('display_order');
       if (error) throw error;
       return data as DayVideo[];
+    },
+  });
+
+  const { data: dayActivities = [] } = useQuery({
+    queryKey: ['ramadan-day-activities'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ramadan_day_activities')
+        .select('*')
+        .order('order_index');
+      if (error) throw error;
+      return data as DayActivity[];
     },
   });
 
