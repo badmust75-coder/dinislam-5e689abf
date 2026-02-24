@@ -1,22 +1,24 @@
 import { useState } from 'react';
-import { Settings, Loader2 } from 'lucide-react';
+import { Settings, Loader2, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const UserSettingsDialog = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  // Name
   const [newName, setNewName] = useState('');
   const [savingName, setSavingName] = useState(false);
 
-  // Password
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
@@ -33,13 +35,11 @@ const UserSettingsDialog = () => {
     if (!newName.trim() || !user) return;
     setSavingName(true);
     try {
-      // Update auth metadata
       const { error: authError } = await supabase.auth.updateUser({
         data: { full_name: newName.trim() },
       });
       if (authError) throw authError;
 
-      // Update profiles table
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ full_name: newName.trim() })
@@ -75,6 +75,12 @@ const UserSettingsDialog = () => {
     } finally {
       setSavingPassword(false);
     }
+  };
+
+  const handleLogout = async () => {
+    setOpen(false);
+    await signOut();
+    navigate('/auth');
   };
 
   return (
@@ -142,6 +148,27 @@ const UserSettingsDialog = () => {
                 Enregistrer le mot de passe
               </Button>
             </div>
+
+            {/* Logout section */}
+            <Separator />
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="w-full text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Se déconnecter
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Se déconnecter ?</AlertDialogTitle>
+                  <AlertDialogDescription>Êtes-vous sûr de vouloir quitter l'application ?</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">Quitter</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </DialogContent>
       </Dialog>
