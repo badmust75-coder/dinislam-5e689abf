@@ -19,6 +19,9 @@ interface LearningCardProps {
   progressPercentage?: number;
   averageProgress?: number;
   showAverageProgress?: boolean;
+  onReplaceAudio?: (file: File) => void;
+  onDeleteAudio?: () => void;
+  canManageAudio?: boolean;
 }
 
 const LearningCard = ({
@@ -34,6 +37,9 @@ const LearningCard = ({
   progressPercentage = 0,
   averageProgress = 0,
   showAverageProgress = false,
+  onReplaceAudio,
+  onDeleteAudio,
+  canManageAudio = false,
 }: LearningCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -99,6 +105,9 @@ const LearningCard = ({
             audioUrl={audioUrl}
             titleArabic={titleArabic}
             title={titleFrench}
+            onReplace={onReplaceAudio}
+            onDelete={onDeleteAudio}
+            canManage={canManageAudio}
           />
 
           {/* Progress bars */}
