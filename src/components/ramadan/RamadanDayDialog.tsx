@@ -592,6 +592,92 @@ const RamadanDayDialog = ({
                   Refaire le quiz (entraînement)
                 </Button>
               )}
+
+              {/* Activité du jour */}
+              {activities.length > 0 && (
+                <div className="mt-6 space-y-3 border-t pt-4">
+                  <h4 className="font-semibold text-foreground text-sm flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    Activité du jour
+                  </h4>
+                  <div className="space-y-3">
+                    {activities.map((activity) => {
+                      const isVideo = activity.type === 'video' || activity.file_type?.startsWith('video/');
+                      const isAudio = activity.type === 'audio' || activity.file_type?.startsWith('audio/');
+                      const isPdfOrImage = activity.type === 'document' || activity.file_type?.startsWith('image/') || activity.file_type === 'application/pdf';
+
+                      if (isVideo) {
+                        return (
+                          <div key={activity.id} className="space-y-1">
+                            <p className="text-xs text-muted-foreground">{activity.file_name}</p>
+                            <div className="aspect-video rounded-xl overflow-hidden bg-black">
+                              <video src={activity.file_url} controls className="w-full h-full" />
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (isAudio) {
+                        return (
+                          <div key={activity.id} className="p-3 rounded-xl border bg-muted/30 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Volume2 className="h-4 w-4 text-primary" />
+                              <span className="text-sm font-medium text-foreground truncate">{activity.file_name}</span>
+                            </div>
+                            <audio src={activity.file_url} controls className="w-full" />
+                            <a href={activity.file_url} download={activity.file_name} target="_blank" rel="noopener noreferrer">
+                              <Button variant="outline" size="sm" className="w-full">
+                                <Download className="h-3 w-3 mr-2" />
+                                Télécharger
+                              </Button>
+                            </a>
+                          </div>
+                        );
+                      }
+
+                      // PDF / Image document
+                      return (
+                        <div key={activity.id} className="p-3 rounded-xl border bg-muted/30 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-medium text-foreground truncate">{activity.file_name}</span>
+                          </div>
+                          {activity.file_type?.startsWith('image/') && (
+                            <img src={activity.file_url} alt={activity.file_name} className="w-full rounded-lg" />
+                          )}
+                          <div className="flex gap-2">
+                            <a href={activity.file_url} target="_blank" rel="noopener noreferrer" className="flex-1">
+                              <Button variant="outline" size="sm" className="w-full">
+                                Voir
+                              </Button>
+                            </a>
+                            <a href={activity.file_url} download={activity.file_name} className="flex-1">
+                              <Button variant="outline" size="sm" className="w-full">
+                                <Download className="h-3 w-3 mr-2" />
+                                Télécharger
+                              </Button>
+                            </a>
+                            {activity.file_type === 'application/pdf' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => {
+                                  const w = window.open(activity.file_url, '_blank');
+                                  if (w) setTimeout(() => w.print(), 1000);
+                                }}
+                              >
+                                <Printer className="h-3 w-3 mr-2" />
+                                Imprimer
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             /* Quiz step — one question at a time with second chance */
