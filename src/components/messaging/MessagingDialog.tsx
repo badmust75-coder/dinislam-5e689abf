@@ -272,9 +272,6 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
                       <AudioPlayer
                         audioUrl={msg.audio_url}
                         compact
-                        canManage={msg.sender_type === 'user'}
-                        onReplace={(file) => handleReplaceAudio(msg.id, file)}
-                        onDelete={() => handleDeleteAudio(msg.id)}
                       />
                     ) : (
                       <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
