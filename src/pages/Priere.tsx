@@ -605,6 +605,9 @@ const Priere = () => {
             );
           })}
         </div>
+
+        {/* Prayer Module Cards (Petits, Jeunes, Adultes) */}
+        <PrayerModuleCards />
       </div>
 
       {/* Qibla Compass Drawer */}
