@@ -12,6 +12,7 @@ import NewMessageNotification from '@/components/messaging/NewMessageNotificatio
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { useAdminNotificationsCount } from '@/hooks/useAdminNotificationsCount';
 import { useMonitoringErrorCount } from '@/hooks/useMonitoringErrorCount';
+import AdminCommandModal from '@/components/admin/AdminCommandModal';
 
 interface HeaderProps {
   title?: string;
