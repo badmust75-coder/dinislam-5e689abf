@@ -65,6 +65,9 @@ const Monitoring = () => {
   const [errorCount, setErrorCount] = useState(0);
   const [clearingLogs, setClearingLogs] = useState(false);
 
+  // Validation counts
+  const [validationCounts, setValidationCounts] = useState({ registrations: 0, sourates: 0, nourania: 0, invocations: 0 });
+
   const checkStatus = useCallback(async () => {
     // Supabase ping
     try {
