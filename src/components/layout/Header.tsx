@@ -10,7 +10,7 @@ import MessagingDialog from '@/components/messaging/MessagingDialog';
 import AdminMessagingDialog from '@/components/messaging/AdminMessagingDialog';
 import NewMessageNotification from '@/components/messaging/NewMessageNotification';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
-import { useAdminNotificationsCount } from '@/hooks/useAdminNotificationsCount';
+import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts';
 import { useMonitoringErrorCount } from '@/hooks/useMonitoringErrorCount';
 import AdminCommandModal from '@/components/admin/AdminCommandModal';
 
@@ -29,7 +29,7 @@ const Header = ({
   const [showMessaging, setShowMessaging] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const { unreadCount, hasNewMessage, clearNewMessageFlag } = useUnreadMessages();
-  const adminPendingCount = useAdminNotificationsCount();
+  const pendingCounts = useAdminPendingCounts();
   const monitoringErrors = useMonitoringErrorCount();
 
   const handleOpenMessaging = () => {
