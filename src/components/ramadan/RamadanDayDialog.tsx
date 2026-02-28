@@ -75,6 +75,8 @@ const RamadanDayDialog = ({
   onSubmitQuiz,
   onSaveQuizResponse,
 }: RamadanDayDialogProps) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>('video');
   const [isTrainingMode, setIsTrainingMode] = useState(false);
   const [currentVideoIdx, setCurrentVideoIdx] = useState(0);
@@ -89,12 +91,47 @@ const RamadanDayDialog = ({
   const [allFirstAttempt, setAllFirstAttempt] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [countdownProgress, setCountdownProgress] = useState(100);
+  const [watchedVideoIds, setWatchedVideoIds] = useState<Set<string>>(new Set());
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const quizRef = useRef<HTMLDivElement>(null);
   const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const { fireConfetti, fireSuccess } = useConfetti();
+
+  // Fun messages when trying to skip to quiz
+  const FUN_MESSAGES = [
+    "Hé, pas si vite ! 🎬 Regarde d'abord les vidéos, le quiz sera bien plus facile après, promis ! 😄",
+    "Oups ! Tu essaies de tricher ? 😅 Les vidéos d'abord, le quiz ensuite, comme un vrai champion ! 🏆",
+    "Attends attends attends... 🛑 Les vidéos ne se regardent pas toutes seules ! Lance-les d'abord 🎥",
+  ];
+
+  // Fetch persisted watched videos from DB
+  const { data: persistedWatched } = useQuery({
+    queryKey: ['ramadan-video-watched', user?.id, dayId],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('user_ramadan_video_watched')
+        .select('video_id')
+        .eq('user_id', user.id)
+        .eq('day_id', dayId);
+      if (error) throw error;
+      return (data || []).map(d => d.video_id);
+    },
+    enabled: open && !!user && !!dayId,
+  });
+
+  // Sync persisted watched into local state
+  useEffect(() => {
+    if (persistedWatched && persistedWatched.length > 0) {
+      setWatchedVideoIds(prev => {
+        const next = new Set(prev);
+        persistedWatched.forEach(id => next.add(id));
+        return next;
+      });
+    }
+  }, [persistedWatched]);
 
   // Fetch activities for this day
   const { data: activities = [] } = useQuery({
