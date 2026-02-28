@@ -27,6 +27,7 @@ const Header = ({
   const location = useLocation();
   const { isAdmin } = useAuth();
   const [showMessaging, setShowMessaging] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
   const { unreadCount, hasNewMessage, clearNewMessageFlag } = useUnreadMessages();
   const adminPendingCount = useAdminNotificationsCount();
   const monitoringErrors = useMonitoringErrorCount();
