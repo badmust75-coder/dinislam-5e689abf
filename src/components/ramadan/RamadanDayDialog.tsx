@@ -331,6 +331,33 @@ const RamadanDayDialog = ({
   const totalQuestions = sortedQuizzes.length;
   const currentQuiz = sortedQuizzes[currentQuestionIdx];
 
+  // Compute if all videos are watched
+  const allVideosWatched = totalVideos === 0 || playlist.every(v => watchedVideoIds.has(v.id));
+  const watchedCount = playlist.filter(v => watchedVideoIds.has(v.id)).length;
+
+  // Mark a single video as watched (persist to DB)
+  const markVideoAsWatched = useCallback(async (videoId: string) => {
+    if (watchedVideoIds.has(videoId) || !user) return;
+    setWatchedVideoIds(prev => new Set(prev).add(videoId));
+    try {
+      await supabase.from('user_ramadan_video_watched').upsert({
+        user_id: user.id,
+        day_id: dayId,
+        video_id: videoId,
+      }, { onConflict: 'user_id,video_id' });
+      queryClient.invalidateQueries({ queryKey: ['ramadan-video-watched', user.id, dayId] });
+    } catch {}
+  }, [watchedVideoIds, user, dayId, queryClient]);
+
+  // Track video progress — mark as watched at 80%
+  const handleTimeUpdate = useCallback(() => {
+    if (!videoRef.current || !currentVideo) return;
+    const { currentTime, duration } = videoRef.current;
+    if (duration > 0 && currentTime / duration >= 0.8) {
+      markVideoAsWatched(currentVideo.id);
+    }
+  }, [currentVideo, markVideoAsWatched]);
+
   // Cleanup timer on unmount
   useEffect(() => {
     return () => {
@@ -345,10 +372,13 @@ const RamadanDayDialog = ({
   };
 
   const handleVideoEnded = () => {
+    // Mark current video as watched
+    if (currentVideo) markVideoAsWatched(currentVideo.id);
     if (!videoWatched) onMarkVideoWatched();
     if (currentVideoIdx < totalVideos - 1) {
       setCurrentVideoIdx(prev => prev + 1);
-    } else {
+    } else if (allVideosWatched || (watchedVideoIds.has(currentVideo?.id || '') && watchedCount + 1 >= totalVideos)) {
+      toast.success("Bravo, tu es prêt(e) ! 🌟 C'est parti pour le quiz !");
       goToQuiz();
     }
   };
@@ -368,6 +398,11 @@ const RamadanDayDialog = ({
   };
 
   const handleSkipToQuiz = () => {
+    if (!allVideosWatched) {
+      const msg = FUN_MESSAGES[Math.floor(Math.random() * FUN_MESSAGES.length)];
+      toast(msg, { duration: 4000 });
+      return;
+    }
     if (!videoWatched) onMarkVideoWatched();
     goToQuiz();
   };
@@ -397,6 +432,7 @@ const RamadanDayDialog = ({
 
   const handleVideoPlay = () => setIsPlaying(true);
   const handleVideoPause = () => setIsPlaying(false);
+
 
   const advanceToNextQuestion = () => {
     const newAnswered = answeredCount + 1;
