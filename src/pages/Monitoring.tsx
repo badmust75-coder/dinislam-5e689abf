@@ -288,6 +288,44 @@ const Monitoring = () => {
           </CardContent>
         </Card>
 
+        {/* SECTION 1.5: Validations en attente */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              ✅ Validations en attente
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Inscriptions', count: validationCounts.registrations, icon: UserCheck, section: 'registration-validations' },
+                { label: 'Sourates', count: validationCounts.sourates, icon: ClipboardCheck, section: 'sourates-validations' },
+                { label: 'Nourania', count: validationCounts.nourania, icon: Sparkles, section: 'nourania-validations' },
+                { label: 'Invocations', count: validationCounts.invocations, icon: Hand, section: 'invocations-validations' },
+              ].map((item) => {
+                const Icon = item.icon;
+                const hasPending = item.count > 0;
+                return (
+                  <button
+                    key={item.section}
+                    onClick={() => navigate(`/admin?section=${item.section}`)}
+                    className={`rounded-xl p-3 border transition-all text-center ${
+                      hasPending
+                        ? 'bg-red-500/10 border-red-300 dark:border-red-700 hover:bg-red-500/20'
+                        : 'bg-emerald-500/10 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-500/20'
+                    }`}
+                  >
+                    <Icon className={`h-5 w-5 mx-auto mb-1 ${hasPending ? 'text-red-500' : 'text-emerald-500'}`} />
+                    <p className={`text-xs font-medium ${hasPending ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300'}`}>{item.label}</p>
+                    <p className={`text-xl font-bold ${hasPending ? 'text-red-600' : 'text-emerald-600'}`}>{item.count}</p>
+                    {hasPending && <Badge className="bg-red-500 text-white text-[10px] px-1.5 mt-1 animate-pulse">{item.count}</Badge>}
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* SECTION 2: Push Notifications */}
         <Card>
           <CardHeader className="pb-3">
