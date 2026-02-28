@@ -67,7 +67,7 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
   try {
     const registration = await navigator.serviceWorker.ready;
     
-    let subscription = await registration.pushManager.getSubscription();
+    let subscription = await (registration as any).pushManager.getSubscription();
     
     if (!subscription) {
       const vapidKey = await getVapidPublicKey();
@@ -77,10 +77,10 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
       };
       
       if (vapidKey) {
-        subscribeOptions.applicationServerKey = urlBase64ToUint8Array(vapidKey);
+        subscribeOptions.applicationServerKey = urlBase64ToUint8Array(vapidKey) as any;
       }
       
-      subscription = await registration.pushManager.subscribe(subscribeOptions);
+      subscription = await (registration as any).pushManager.subscribe(subscribeOptions);
     }
 
     if (subscription) {
@@ -115,7 +115,7 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
 export async function unsubscribeFromPush(userId: string): Promise<boolean> {
   try {
     const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
+    const subscription = await (registration as any).pushManager.getSubscription();
 
     if (subscription) {
       await subscription.unsubscribe();
