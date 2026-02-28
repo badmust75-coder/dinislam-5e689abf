@@ -309,6 +309,75 @@ const Monitoring = () => {
     setBroadcasting(false);
   };
 
+  const handleResubscribe = async () => {
+    if (!user?.id) return;
+    setResubbing(true);
+    setResubResult(null);
+    try {
+      await registerServiceWorker();
+      const perm = await requestNotificationPermission();
+      if (perm !== 'granted') {
+        setResubResult(`❌ Permission refusée (${perm})`);
+        setResubbing(false);
+        return;
+      }
+      const result = await subscribeToPush(user.id);
+      if (result.success) {
+        setResubResult(`✅ Abonnement sauvegardé ! Endpoint : ${result.endpoint?.substring(0, 20)}...`);
+      } else {
+        setResubResult(`❌ Erreur : ${result.detail}`);
+      }
+      loadPushData();
+    } catch (e: any) {
+      setResubResult(`❌ Exception : ${e.message}`);
+    }
+    setResubbing(false);
+  };
+
+  const handleChainTest = async () => {
+    if (!user?.id) return;
+    setChainTesting(true);
+    setChainTestResult([]);
+    const addLog = (msg: string) => setChainTestResult(prev => [...prev, `${new Date().toLocaleTimeString()} — ${msg}`]);
+    
+    addLog('1️⃣ Enregistrement Service Worker...');
+    const reg = await registerServiceWorker();
+    addLog(reg ? `✅ SW enregistré (state: ${reg.active?.state || 'unknown'})` : '❌ SW non enregistré');
+    
+    addLog('2️⃣ Vérification permission...');
+    const perm = 'Notification' in window ? Notification.permission : 'non supporté';
+    addLog(`Permission actuelle : ${perm}`);
+    
+    if (perm === 'default') {
+      addLog('➡️ Demande de permission...');
+      const newPerm = await requestNotificationPermission();
+      addLog(`Résultat : ${newPerm}`);
+      if (newPerm !== 'granted') { addLog('⛔ Arrêt'); setChainTesting(false); return; }
+    } else if (perm !== 'granted') {
+      addLog('⛔ Permission denied, arrêt');
+      setChainTesting(false);
+      return;
+    }
+    
+    addLog('3️⃣ Vérification souscription existante...');
+    if ('serviceWorker' in navigator) {
+      const swReg = await navigator.serviceWorker.ready;
+      const existingSub = await (swReg as any).pushManager.getSubscription();
+      addLog(existingSub ? `Sub existante : ${existingSub.endpoint.substring(0, 30)}...` : 'Aucune souscription existante');
+    }
+    
+    addLog('4️⃣ subscribeToPush()...');
+    const result = await subscribeToPush(user.id);
+    addLog(result.success ? `✅ ${result.detail} — endpoint: ${result.endpoint?.substring(0, 30)}...` : `❌ ${result.detail}`);
+    
+    addLog('5️⃣ Vérification en DB...');
+    const { count } = await supabase.from('push_subscriptions').select('*', { count: 'exact', head: true }).eq('user_id', user.id);
+    addLog(`Entrées en DB : ${count || 0}`);
+    
+    loadPushData();
+    setChainTesting(false);
+  };
+
   const handleClearLogs = async () => {
     setClearingLogs(true);
     await supabase.from('app_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
