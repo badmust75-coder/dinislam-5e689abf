@@ -218,6 +218,15 @@ const Admin = () => {
   useEffect(() => { setPendingNourania(pendingNouraniaCount || 0); }, [pendingNouraniaCount]);
   useEffect(() => { setPendingInvocations(pendingInvocationsCount || 0); }, [pendingInvocationsCount]);
 
+  // Handle section query param from admin command modal
+  useEffect(() => {
+    const section = searchParams.get('section');
+    if (section) {
+      setCurrentView(section as ViewType);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   // Realtime subscription for pending count updates
   useEffect(() => {
     const channel = supabase
