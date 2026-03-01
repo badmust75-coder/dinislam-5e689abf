@@ -32,18 +32,12 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { 
   Users, GraduationCap, Moon, Sparkles, BookOpen, MessageSquare, 
   BookMarked, Hand, Settings, Mail, ClipboardCheck, UserCheck,
-  Plus, GripVertical, MoreVertical, Pencil, Trash2,
+  Plus, GripVertical, Trash2,
   FileText, List, Video, Star, Heart, Bell, Calendar, Image, Music,
   ClipboardList, LayoutGrid, Book, Scroll
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   DndContext,
   closestCenter,
