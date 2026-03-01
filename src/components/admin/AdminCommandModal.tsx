@@ -23,6 +23,9 @@ const AdminCommandModal = ({
   pendingSourates,
   pendingNourania,
   pendingInvocations,
+  pendingMessages,
+  pendingHomework,
+  total,
 }: AdminCommandModalProps) => {
   const navigate = useNavigate();
 
@@ -78,6 +81,12 @@ const AdminCommandModal = ({
             );
           })}
         </div>
+
+        {total === 0 && (
+          <div className="text-center py-3 text-sm text-emerald-600 font-medium">
+            Tout est à jour ! ✅
+          </div>
+        )}
 
         <div className="flex flex-col gap-2 mt-2">
           <Button onClick={() => { onOpenChange(false); navigate('/admin'); }} className="w-full">
