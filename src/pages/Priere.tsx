@@ -1,8 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  Clock, Navigation, MapPin, ChevronDown
-} from 'lucide-react';
+import { Clock, Navigation, MapPin, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
@@ -21,67 +19,14 @@ function getTodayKey(): string {
 }
 
 const Priere = () => {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-
-const Priere = () => {
-  const { user, isAdmin } = useAuth();
-  const queryClient = useQueryClient();
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  const [showAddCategory, setShowAddCategory] = useState(false);
-  const [showAddContent, setShowAddContent] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState({ arabic: '', french: '' });
-  const [newContent, setNewContent] = useState({ type: 'text', title: '', content: '' });
-  const [selectedCategoryForContent, setSelectedCategoryForContent] = useState<string | null>(null);
-  const [deleteContentId, setDeleteContentId] = useState<string | null>(null);
   const [showQibla, setShowQibla] = useState(false);
   const [showCitySelector, setShowCitySelector] = useState(false);
-  const [selectedCity, setSelectedCity] = useState<CityOption>(CITIES[0]); // Montpellier by default
+  const [selectedCity, setSelectedCity] = useState<CityOption>(CITIES[0]);
 
   const { prayerTimes, loading: prayerLoading, error: prayerError, getNextPrayer } = usePrayerTimesCity(selectedCity);
 
-  // Fetch categories from database
-  const { data: categories = [] } = useQuery({
-    queryKey: ['prayer-categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('prayer_categories')
-        .select('*')
-        .order('display_order');
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Fetch content for all categories
-  const { data: allContent = [] } = useQuery({
-    queryKey: ['prayer-content'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('prayer_content')
-        .select('*')
-        .order('display_order');
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Fetch user's progress
-  const { data: userProgress = [] } = useQuery({
-    queryKey: ['prayer-progress', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from('user_prayer_progress')
-        .select('*')
-        .eq('user_id', user.id);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.id,
-  });
-
-  // Fetch daily prayers (last 30 days for calendar)
   const { data: dailyPrayers = [] } = useQuery({
     queryKey: ['user-daily-prayers', user?.id],
     queryFn: async () => {
@@ -101,13 +46,11 @@ const Priere = () => {
     enabled: !!user?.id,
   });
 
-  // Today's checked prayers
   const todayKey = getTodayKey();
   const todayChecked = dailyPrayers
     .filter(p => p.date === todayKey)
     .map(p => p.prayer_name);
 
-  // Build calendar data (group by date → count)
   const calendarData = useMemo(() => {
     const map: Record<string, number> = {};
     dailyPrayers.forEach(p => {
@@ -121,144 +64,29 @@ const Priere = () => {
       if (!user?.id) throw new Error('Non connecté');
       const existing = dailyPrayers.find(p => p.date === todayKey && p.prayer_name === prayerName);
       if (existing) {
-        // Toggle off → delete
-        const { error } = await supabase
-          .from('user_daily_prayers')
-          .delete()
-          .eq('id', existing.id);
+        const { error } = await supabase.from('user_daily_prayers').delete().eq('id', existing.id);
         if (error) throw error;
       } else {
-        // Toggle on → insert
-        const { error } = await supabase
-          .from('user_daily_prayers')
-          .insert({ user_id: user.id, date: todayKey, prayer_name: prayerName, is_checked: true });
+        const { error } = await supabase.from('user_daily_prayers').insert({ user_id: user.id, date: todayKey, prayer_name: prayerName, is_checked: true });
         if (error) throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-daily-prayers', user?.id] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['user-daily-prayers', user?.id] }),
     onError: () => toast.error('Erreur lors de la mise à jour'),
   });
-
-  const validatedCount = userProgress.filter(p => p.is_validated).length;
-  const totalCategories = categories.length;
-  const progressPercentage = totalCategories > 0 ? Math.round((validatedCount / totalCategories) * 100) : 0;
-
-  const addCategoryMutation = useMutation({
-    mutationFn: async () => {
-      const maxOrder = categories.length > 0 
-        ? Math.max(...categories.map(c => c.display_order)) 
-        : 0;
-      const { error } = await supabase
-        .from('prayer_categories')
-        .insert({
-          name_arabic: newCategoryName.arabic,
-          name_french: newCategoryName.french,
-          display_order: maxOrder + 1,
-          is_default: false,
-          created_by: user?.id,
-        });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['prayer-categories'] });
-      setShowAddCategory(false);
-      setNewCategoryName({ arabic: '', french: '' });
-      toast.success('Catégorie ajoutée !');
-    },
-    onError: () => toast.error('Erreur lors de l\'ajout'),
-  });
-
-  const addContentMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedCategoryForContent) throw new Error('Aucune catégorie sélectionnée');
-      const categoryContent = allContent.filter(c => c.category_id === selectedCategoryForContent);
-      const maxOrder = categoryContent.length > 0 
-        ? Math.max(...categoryContent.map(c => c.display_order)) 
-        : 0;
-      const { error } = await supabase
-        .from('prayer_content')
-        .insert({
-          category_id: selectedCategoryForContent,
-          content_type: newContent.type,
-          title: newContent.title,
-          content: newContent.content,
-          display_order: maxOrder + 1,
-        });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['prayer-content'] });
-      setShowAddContent(false);
-      setNewContent({ type: 'text', title: '', content: '' });
-      setSelectedCategoryForContent(null);
-      toast.success('Contenu ajouté !');
-    },
-    onError: () => toast.error('Erreur lors de l\'ajout'),
-  });
-
-  const deleteContentMutation = useMutation({
-    mutationFn: async (contentId: string) => {
-      const { error } = await supabase
-        .from('prayer_content')
-        .delete()
-        .eq('id', contentId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['prayer-content'] });
-      toast.success('Contenu supprimé');
-    },
-  });
-
-  const validateMutation = useMutation({
-    mutationFn: async (categoryId: string) => {
-      if (!user?.id) throw new Error('Non connecté');
-      const existingProgress = userProgress.find(p => p.category_id === categoryId);
-      if (existingProgress) {
-        const { error } = await supabase
-          .from('user_prayer_progress')
-          .update({ is_validated: true, updated_at: new Date().toISOString() })
-          .eq('id', existingProgress.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_prayer_progress')
-          .insert({ user_id: user.id, category_id: categoryId, is_validated: true });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['prayer-progress'] });
-      toast.success('Catégorie validée !');
-    },
-    onError: () => toast.error('Erreur lors de la validation'),
-  });
-
-  const isCategoryValidated = (categoryId: string) =>
-    userProgress.some(p => p.category_id === categoryId && p.is_validated);
-
-  const getCategoryContent = (categoryId: string) =>
-    allContent.filter(c => c.category_id === categoryId);
-
-  const getIcon = (iconName: string) => iconMap[iconName] || Hand;
 
   const nextPrayer = prayerTimes ? getNextPrayer() : null;
 
   return (
     <AppLayout>
       <div className="p-4 space-y-6 max-w-4xl mx-auto">
-        {/* Header */}
         <div className="text-center space-y-2 animate-fade-in">
           <h1 className="text-2xl font-bold text-foreground">الصلاة</h1>
           <p className="text-muted-foreground">La Prière - Apprentissage complet</p>
         </div>
 
-        {/* Weekly Calendar - moved up */}
         <PrayerWeeklyCalendar prayerData={calendarData} />
 
-        {/* Next prayer banner - moved up */}
         {nextPrayer && (
           <div className="rounded-xl bg-green-700 text-white p-3 flex items-center justify-between">
             <div>
@@ -272,11 +100,8 @@ const Priere = () => {
           </div>
         )}
 
-        {/* ── PRAYER TIMES SECTION ── */}
         <div className="space-y-3 animate-fade-in">
-          {/* City selector + Qibla button */}
           <div className="flex items-center gap-2">
-            {/* City Selector */}
             <div className="flex-1 relative">
               <button
                 onClick={() => setShowCitySelector(!showCitySelector)}
@@ -286,7 +111,6 @@ const Priere = () => {
                 <span className="flex-1 text-left font-medium">{selectedCity.label}</span>
                 <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', showCitySelector && 'rotate-180')} />
               </button>
-
               {showCitySelector && (
                 <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-card border border-border rounded-xl shadow-elevated max-h-56 overflow-y-auto">
                   {CITIES.map((city) => (
@@ -305,18 +129,12 @@ const Priere = () => {
                 </div>
               )}
             </div>
-
-            {/* Qibla Button */}
-            <Button
-              onClick={() => setShowQibla(true)}
-              className="gap-2 bg-green-700 hover:bg-green-800 text-white shrink-0"
-            >
+            <Button onClick={() => setShowQibla(true)} className="gap-2 bg-green-700 hover:bg-green-800 text-white shrink-0">
               <Navigation className="h-4 w-4" />
               Qibla
             </Button>
           </div>
 
-          {/* Prayer times card */}
           {prayerLoading ? (
             <div className="rounded-2xl bg-slate-800 h-40 flex items-center justify-center">
               <div className="flex items-center gap-2 text-slate-400">
@@ -338,24 +156,12 @@ const Priere = () => {
           ) : null}
         </div>
 
-        {/* Prayer Module Cards (Petits, Jeunes, Adultes) */}
         <PrayerModuleCards />
       </div>
 
-      {/* Qibla Compass Drawer */}
       {showQibla && (
         <QiblaCompass city={selectedCity} onClose={() => setShowQibla(false)} />
       )}
-
-      <ConfirmDeleteDialog
-        open={!!deleteContentId}
-        onOpenChange={(open) => !open && setDeleteContentId(null)}
-        onConfirm={() => {
-          if (deleteContentId) deleteContentMutation.mutate(deleteContentId);
-          setDeleteContentId(null);
-        }}
-        description="Ce contenu sera supprimé définitivement."
-      />
     </AppLayout>
   );
 };
