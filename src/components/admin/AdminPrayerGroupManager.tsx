@@ -82,7 +82,7 @@ const AdminPrayerGroupManager = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="max-h-[60vh]">
+        <div className="max-h-[400px] overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
           <div className="space-y-2">
             {students.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">Aucun élève</p>
@@ -151,7 +151,7 @@ const AdminPrayerGroupManager = () => {
               })
             )}
           </div>
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   );
