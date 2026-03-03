@@ -508,7 +508,7 @@ const Monitoring = () => {
               { label: 'Connexion Base de données', ok: status.supabase },
               { label: 'Fonctions backend', ok: status.edgeFn },
               { label: 'Service Worker PWA', ok: status.sw },
-              { label: 'OneSignal Push', ok: status.push },
+              { label: 'Push VAPID', ok: status.push },
             ].map(s => (
               <div key={s.label} className="flex items-center justify-between py-1">
                 <span className="text-sm">{s.label}</span>
