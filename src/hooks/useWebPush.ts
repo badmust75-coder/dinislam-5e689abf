@@ -60,7 +60,7 @@ export function useWebPush() {
     try {
       const registration = await navigator.serviceWorker.ready;
       console.log('[WebPush] SW ready, checking existing subscription...');
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = await (registration as any).pushManager.getSubscription();
       console.log('[WebPush] Existing subscription:', subscription ? 'found' : 'none');
       if (subscription && user) {
         const { data } = await supabase
@@ -113,7 +113,7 @@ export function useWebPush() {
       console.log('[WebPush] SW ready. Subscribing to push...');
       
       const keyArray = urlBase64ToUint8Array(vapidKey);
-      const subscription = await registration.pushManager.subscribe({
+      const subscription = await (registration as any).pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: keyArray
       });
@@ -159,7 +159,7 @@ export function useWebPush() {
     setState(s => ({ ...s, isLoading: true }));
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = await (registration as any).pushManager.getSubscription();
       if (subscription) {
         console.log('[WebPush] Unsubscribing...');
         await subscription.unsubscribe();
