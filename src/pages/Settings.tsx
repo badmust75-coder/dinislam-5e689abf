@@ -57,15 +57,15 @@ const Settings = () => {
 
   useEffect(() => {
     loadPreferences();
-  }, [user]);
+  }, [user, isSubscribed]);
 
   const loadPreferences = async () => {
     if (!user) return;
 
     try {
-      // Check if notifications are supported and permission granted
+      // Sync notification state with actual push subscription
       if ('Notification' in window) {
-        setNotificationsEnabled(Notification.permission === 'granted');
+        setNotificationsEnabled(Notification.permission === 'granted' && isSubscribed);
       }
 
       // Load preferences from database
