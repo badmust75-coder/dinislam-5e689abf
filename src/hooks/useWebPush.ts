@@ -121,9 +121,10 @@ export function useWebPush() {
         await existingSub.unsubscribe();
       }
       console.log('[WebPush] Step 4 — pushManager.subscribe()...');
+      const appServerKey = urlBase64ToUint8Array(vapidKey);
       const subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey)
+        applicationServerKey: appServerKey as unknown as ArrayBuffer
       });
       console.log('[WebPush] Step 4 — Abonnement créé:', subscription.endpoint.substring(0, 60) + '...');
 
