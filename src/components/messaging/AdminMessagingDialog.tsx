@@ -651,7 +651,38 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
               </div>
             )}
 
-            <Textarea
+            {/* Groups selection */}
+            {groupMsgMode === 'groups' && (
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">📂 Groupes ({groupMsgSelectedGroups.size} sélectionné{groupMsgSelectedGroups.size > 1 ? 's' : ''})</Label>
+                {studentGroups.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-3">Aucun groupe créé. Allez dans Élèves pour en créer.</p>
+                ) : (
+                  <div className="border rounded-lg divide-y">
+                    {studentGroups.map((g: any) => (
+                      <div
+                        key={g.id}
+                        onClick={() => {
+                          const next = new Set(groupMsgSelectedGroups);
+                          next.has(g.id) ? next.delete(g.id) : next.add(g.id);
+                          setGroupMsgSelectedGroups(next);
+                        }}
+                        className="flex items-center gap-3 p-2.5 cursor-pointer hover:bg-muted/50 transition-colors"
+                      >
+                        <Checkbox checked={groupMsgSelectedGroups.has(g.id)} />
+                        <div className={`w-3 h-3 rounded-full shrink-0 ${g.color}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{g.name}</p>
+                          <p className="text-xs text-muted-foreground">{g.memberIds.length} élève{g.memberIds.length > 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+
               value={groupMsgText}
               onChange={(e) => setGroupMsgText(e.target.value)}
               placeholder="Votre message..."
