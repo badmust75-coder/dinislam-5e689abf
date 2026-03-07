@@ -59,17 +59,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          const [adminStatus, approvalStatus] = await Promise.all([
-            checkAdminRole(session.user.id),
-            checkApprovalStatus(session.user.id),
-          ]);
-          setIsAdmin(adminStatus);
-          setIsApproved(adminStatus ? true : approvalStatus);
+          // Use setTimeout to avoid blocking the auth state change callback
+          setTimeout(async () => {
+            const [adminStatus, approvalStatus] = await Promise.all([
+              checkAdminRole(session.user.id),
+              checkApprovalStatus(session.user.id),
+            ]);
+            setIsAdmin(adminStatus);
+            setIsApproved(adminStatus ? true : approvalStatus);
+          }, 0);
         } else {
           setIsAdmin(false);
           setIsApproved(null);
@@ -83,11 +86,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
 
       if (session?.user) {
-        checkAdminRole(session.user.id).then(setIsAdmin);
-        checkApprovalStatus(session.user.id).then((status) => {
-          checkAdminRole(session.user.id).then((isAdm) => {
-            setIsApproved(isAdm ? true : status);
-          });
+        Promise.all([
+          checkAdminRole(session.user.id),
+          checkApprovalStatus(session.user.id),
+        ]).then(([adminStatus, approvalStatus]) => {
+          setIsAdmin(adminStatus);
+          setIsApproved(adminStatus ? true : approvalStatus);
         });
         (supabase as any).from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', session.user.id);
       }
