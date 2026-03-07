@@ -64,21 +64,26 @@ const AdminUsersList = ({ onBack }: AdminUsersListProps) => {
         {users?.map((user) => (
           <Card key={user.user_id}>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="h-6 w-6 text-primary" />
+              <div className="flex items-center gap-2 overflow-hidden">
+                <div className="w-10 h-10 min-w-[2.5rem] rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-5 w-5 text-primary" />
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground truncate">
                     {user.full_name || 'Utilisateur'}
                   </p>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>Inscrit le {formatDate(user.created_at)}</span>
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                    <Calendar className="h-3 w-3 shrink-0" />
+                    <span className="truncate">Inscrit le {formatDate(user.created_at)}</span>
                   </div>
                 </div>
-                <Badge variant="outline">Élève</Badge>
+                {user.gender && (
+                  <span className="w-8 h-8 min-w-[2rem] flex items-center justify-center text-base shrink-0">
+                    {user.gender === 'fille' ? '👧' : '👦'}
+                  </span>
+                )}
+                <Badge variant="outline" className="shrink-0">Élève</Badge>
               </div>
             </CardContent>
           </Card>
