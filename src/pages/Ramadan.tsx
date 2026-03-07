@@ -237,6 +237,14 @@ const Ramadan = () => {
   });
 
   const handleDayClick = (day: RamadanDay) => {
+    // Check date-based lock first
+    if (isDateLocked(day)) {
+      toast.info('Ce jour est verrouillé. Tu peux demander à ton professeur de le rouvrir pour toi. 🔓', {
+        style: { textAlign: 'center', display: 'flex', justifyContent: 'center' },
+      });
+      return;
+    }
+
     const isUnlocked = isDayUnlocked(day.day_number);
     const hasContent = dayHasContent(day);
     const waiting = isWaitingForTime(day.day_number);
