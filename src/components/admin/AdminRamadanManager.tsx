@@ -950,6 +950,80 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* Unlock Section */}
+            <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  {(currentDayData as any)?.is_unlocked ? <Unlock className="h-4 w-4 text-green-500" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
+                  Déverrouillage global
+                </Label>
+                <Switch
+                  checked={(currentDayData as any)?.is_unlocked ?? false}
+                  onCheckedChange={(checked) => {
+                    if (selectedDay) toggleDayUnlockMutation.mutate({ dayId: selectedDay, isUnlocked: checked });
+                  }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {(currentDayData as any)?.is_unlocked
+                  ? '🔓 Ce jour est déverrouillé pour tous les élèves'
+                  : '🔒 Verrouillage automatique actif (fenêtre de 4 jours)'}
+              </p>
+
+              {/* Per-student exceptions */}
+              <div className="border-t pt-3 space-y-2">
+                <Label className="text-xs font-semibold">🔑 Déverrouiller pour un élève spécifique</Label>
+                <div className="flex gap-2">
+                  <Select value={selectedStudentForException} onValueChange={setSelectedStudentForException}>
+                    <SelectTrigger className="flex-1 h-8 text-xs">
+                      <SelectValue placeholder="Sélectionner un élève..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {profiles
+                        .filter(p => !currentExceptions.some(e => e.user_id === p.user_id))
+                        .map(p => (
+                          <SelectItem key={p.user_id} value={p.user_id} className="text-xs">
+                            {p.full_name || p.email || 'Sans nom'}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    className="h-8 text-xs"
+                    disabled={!selectedStudentForException || !selectedDay || addExceptionMutation.isPending}
+                    onClick={() => {
+                      if (selectedStudentForException && selectedDay) {
+                        addExceptionMutation.mutate({ userId: selectedStudentForException, dayId: selectedDay });
+                      }
+                    }}
+                  >
+                    {addExceptionMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Unlock className="h-3 w-3" />}
+                  </Button>
+                </div>
+                {currentExceptions.length > 0 && (
+                  <div className="space-y-1">
+                    {currentExceptions.map(exc => {
+                      const profile = profiles.find(p => p.user_id === exc.user_id);
+                      return (
+                        <div key={exc.id} className="flex items-center justify-between p-1.5 rounded bg-green-500/10 text-xs">
+                          <span className="truncate">{profile?.full_name || profile?.email || exc.user_id}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 text-destructive"
+                            onClick={() => deleteExceptionMutation.mutate(exc.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Theme Section */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold">🏷️ Titre / Thématique du jour</Label>
