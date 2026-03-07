@@ -1,10 +1,10 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, CheckCircle2, XCircle, BookOpen, Video, FileText, LogIn } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Video, LogIn, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Props {
   studentId: string;
@@ -13,14 +13,16 @@ interface Props {
 }
 
 const AdminRamadanStudentDetail = ({ studentId, studentName, onBack }: Props) => {
+  const [showErrors, setShowErrors] = useState(false);
+
   const { data, isLoading } = useQuery({
     queryKey: ['admin-ramadan-student-detail', studentId],
     queryFn: async () => {
       const [daysRes, progressRes, responsesRes, quizzesRes, logsRes] = await Promise.all([
         (supabase as any).from('ramadan_days').select('*').order('day_number'),
         (supabase as any).from('user_ramadan_progress').select('*').eq('user_id', studentId),
-        (supabase as any).from('quiz_responses').select('quiz_id, is_correct, attempt_number, created_at').eq('user_id', studentId),
-        (supabase as any).from('ramadan_quizzes').select('id, day_id'),
+        (supabase as any).from('quiz_responses').select('quiz_id, is_correct, attempt_number, selected_option, created_at').eq('user_id', studentId),
+        (supabase as any).from('ramadan_quizzes').select('id, day_id, question, correct_option, options'),
         (supabase as any).from('connexion_logs').select('connected_at').eq('user_id', studentId),
       ]);
 
@@ -30,9 +32,13 @@ const AdminRamadanStudentDetail = ({ studentId, studentName, onBack }: Props) =>
       const quizzes = quizzesRes.data || [];
       const logs = logsRes.data || [];
 
-      // Build quiz_id -> day_id map
+      // Build quiz maps
       const quizToDayMap: Record<string, number> = {};
-      quizzes.forEach((q: any) => { quizToDayMap[q.id] = q.day_id; });
+      const quizMap: Record<string, any> = {};
+      quizzes.forEach((q: any) => {
+        quizToDayMap[q.id] = q.day_id;
+        quizMap[q.id] = q;
+      });
 
       // Group responses by day_id
       const responsesByDay: Record<number, any[]> = {};
@@ -51,8 +57,28 @@ const AdminRamadanStudentDetail = ({ studentId, studentName, onBack }: Props) =>
       // Stats
       const totalQuizCompleted = progress.filter((p: any) => p.quiz_completed).length;
       const totalVideoWatched = progress.filter((p: any) => p.video_watched).length;
-      const totalPdfRead = progress.filter((p: any) => p.pdf_read).length;
       const totalConnections = logs.length;
+
+      // Errors
+      const errorResponses = responses.filter((r: any) => !r.is_correct);
+      const totalErrors = errorResponses.length;
+
+      // Build error details with day info
+      const dayById: Record<number, any> = {};
+      days.forEach((d: any) => { dayById[d.id] = d; });
+
+      const errorDetails = errorResponses.map((r: any) => {
+        const quiz = quizMap[r.quiz_id];
+        const dayId = quizToDayMap[r.quiz_id];
+        const day = dayId != null ? dayById[dayId] : null;
+        const options = quiz?.options || [];
+        return {
+          dayNumber: day?.day_number || '?',
+          question: quiz?.question || '—',
+          selectedOption: typeof r.selected_option === 'number' && options[r.selected_option] ? options[r.selected_option] : `Option ${r.selected_option}`,
+          correctOption: typeof quiz?.correct_option === 'number' && options[quiz.correct_option] ? options[quiz.correct_option] : '—',
+        };
+      });
 
       // Build rows
       const rows = days.map((day: any) => {
@@ -75,7 +101,7 @@ const AdminRamadanStudentDetail = ({ studentId, studentName, onBack }: Props) =>
         };
       });
 
-      return { rows, totalQuizCompleted, totalVideoWatched, totalPdfRead, totalConnections, totalDays: days.length };
+      return { rows, totalQuizCompleted, totalVideoWatched, totalConnections, totalErrors, errorDetails, totalDays: days.length };
     },
   });
 
@@ -96,13 +122,13 @@ const AdminRamadanStudentDetail = ({ studentId, studentName, onBack }: Props) =>
     );
   }
 
-  const { rows = [], totalQuizCompleted = 0, totalVideoWatched = 0, totalPdfRead = 0, totalConnections = 0 } = data || {};
+  const { rows = [], totalQuizCompleted = 0, totalVideoWatched = 0, totalConnections = 0, totalErrors = 0, errorDetails = [] } = data || {};
 
   const stats = [
-    { label: 'Quiz complétés', value: totalQuizCompleted, icon: CheckCircle2, color: 'text-green-600' },
-    { label: 'Vidéos vues', value: totalVideoWatched, icon: Video, color: 'text-blue-600' },
-    { label: 'PDFs lus', value: totalPdfRead, icon: FileText, color: 'text-orange-600' },
-    { label: 'Connexions', value: totalConnections, icon: LogIn, color: 'text-purple-600' },
+    { label: 'Quiz complétés', value: totalQuizCompleted, icon: CheckCircle2, color: 'text-green-600', clickable: false },
+    { label: 'Vidéos vues', value: totalVideoWatched, icon: Video, color: 'text-blue-600', clickable: false },
+    { label: "Nb d'erreurs", value: totalErrors, icon: AlertTriangle, color: 'text-red-600', clickable: true },
+    { label: 'Connexions', value: totalConnections, icon: LogIn, color: 'text-purple-600', clickable: false },
   ];
 
   return (
@@ -121,70 +147,96 @@ const AdminRamadanStudentDetail = ({ studentId, studentName, onBack }: Props) =>
       {/* Stats cards */}
       <div className="grid grid-cols-2 gap-3">
         {stats.map((s) => (
-          <Card key={s.label}>
+          <Card
+            key={s.label}
+            className={s.clickable ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}
+            onClick={s.clickable ? () => setShowErrors(!showErrors) : undefined}
+          >
             <CardContent className="p-4 flex items-center gap-3">
               <s.icon className={`h-6 w-6 ${s.color}`} />
-              <div>
+              <div className="flex-1">
                 <p className="text-2xl font-bold text-foreground">{s.value}</p>
                 <p className="text-xs text-muted-foreground">{s.label}</p>
               </div>
+              {s.clickable && (
+                showErrors
+                  ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Day-by-day table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">Jour</TableHead>
-                  <TableHead>Thème</TableHead>
-                  <TableHead className="text-center w-16">Quiz</TableHead>
-                  <TableHead className="text-center w-16">Vidéo</TableHead>
-                  <TableHead className="text-center w-16">PDF</TableHead>
-                  <TableHead className="text-center w-24">Tentatives</TableHead>
-                  <TableHead className="text-center w-24">Réussite</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row: any) => (
-                  <TableRow
-                    key={row.dayNumber}
-                    className={
-                      row.allDone
-                        ? 'bg-green-50 dark:bg-green-950/20'
-                        : !row.hasData
-                        ? 'bg-muted/30'
-                        : ''
-                    }
-                  >
-                    <TableCell className="font-medium">{row.dayNumber}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground truncate max-w-[150px]">{row.theme || '—'}</TableCell>
-                    <TableCell className="text-center">
-                      {row.quizCompleted ? <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto" /> : <XCircle className="h-4 w-4 text-muted-foreground/40 mx-auto" />}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {row.videoWatched ? <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto" /> : <XCircle className="h-4 w-4 text-muted-foreground/40 mx-auto" />}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {row.pdfRead ? <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto" /> : <XCircle className="h-4 w-4 text-muted-foreground/40 mx-auto" />}
-                    </TableCell>
-                    <TableCell className="text-center text-sm">
-                      {row.attempts > 0 ? row.attempts : '—'}
-                    </TableCell>
-                    <TableCell className="text-center text-sm">
-                      {row.successRate !== null ? `${row.successRate}%` : '—'}
-                    </TableCell>
-                  </TableRow>
+      {/* Error details panel */}
+      {showErrors && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-foreground">Détail des erreurs</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowErrors(false)}>Masquer</Button>
+            </div>
+            {errorDetails.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">Aucune erreur 🎉</p>
+            ) : (
+              <div className="space-y-2">
+                {errorDetails.map((err: any, i: number) => (
+                  <div key={i} className="rounded-lg border p-3 space-y-1 text-sm">
+                    <p className="font-medium text-foreground">Jour {err.dayNumber}</p>
+                    <p className="text-muted-foreground">{err.question}</p>
+                    <p className="text-red-600">Réponse choisie : {err.selectedOption}</p>
+                    <p className="text-green-600">Bonne réponse : {err.correctOption}</p>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Day-by-day cards */}
+      <div className="space-y-3">
+        {rows.map((row: any) => (
+          <Card
+            key={row.dayNumber}
+            className={
+              row.allDone
+                ? 'border-green-200 bg-green-50 dark:bg-green-950/20'
+                : !row.hasData
+                ? 'bg-muted/30'
+                : ''
+            }
+          >
+            <CardContent className="p-4 space-y-2">
+              <div>
+                <p className="font-semibold text-foreground">Jour {row.dayNumber}</p>
+                {row.theme && (
+                  <p className="text-sm text-muted-foreground break-words">{row.theme}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1 text-sm">
+                  <span className="text-muted-foreground">Quiz</span>
+                  {row.quizCompleted ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-muted-foreground/40" />}
+                </div>
+                <div className="flex items-center gap-1 text-sm">
+                  <span className="text-muted-foreground">Vidéo</span>
+                  {row.videoWatched ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-muted-foreground/40" />}
+                </div>
+                <div className="flex items-center gap-1 text-sm">
+                  <span className="text-muted-foreground">PDF</span>
+                  {row.pdfRead ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-muted-foreground/40" />}
+                </div>
+              </div>
+              {row.attempts > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {row.attempts} tentative{row.attempts > 1 ? 's' : ''} — {row.successRate}% de réussite
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
