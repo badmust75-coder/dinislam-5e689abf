@@ -74,26 +74,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsAdmin(false);
           setIsApproved(null);
         }
-        
-        setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const [adminStatus, approvalStatus] = await Promise.all([
-          checkAdminRole(session.user.id),
-          checkApprovalStatus(session.user.id),
-        ]);
-        setIsAdmin(adminStatus);
-        setIsApproved(adminStatus ? true : approvalStatus);
-        await (supabase as any).from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', session.user.id);
-      }
-      
       setLoading(false);
+
+      if (session?.user) {
+        checkAdminRole(session.user.id).then(setIsAdmin);
+        checkApprovalStatus(session.user.id).then((status) => {
+          checkAdminRole(session.user.id).then((isAdm) => {
+            setIsApproved(isAdm ? true : status);
+          });
+        });
+        (supabase as any).from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', session.user.id);
+      }
     });
 
     return () => {
