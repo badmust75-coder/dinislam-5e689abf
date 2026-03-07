@@ -152,17 +152,17 @@ const AdminStudentGroups = () => {
     onError: () => toast.error('Erreur'),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (groupId: string) => {
-      const { error } = await (supabase as any).from('student_groups').delete().eq('id', groupId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['student-groups'] });
+  const handleDeleteGroup = async (groupId: string) => {
+    const { error } = await (supabase as any).from('student_groups').delete().eq('id', groupId);
+    if (!error) {
+      queryClient.setQueryData(['student-groups'], (old: StudentGroup[] | undefined) =>
+        (old || []).filter(g => g.id !== groupId)
+      );
       toast.success('Groupe supprimé');
-    },
-    onError: () => toast.error('Erreur'),
-  });
+    } else {
+      toast.error('Erreur');
+    }
+  };
 
   const reorderMutation = useMutation({
     mutationFn: async (reordered: { id: string; display_order: number }[]) => {
@@ -248,10 +248,10 @@ const AdminStudentGroups = () => {
             >
               <CardContent className="p-3">
                 <div className="flex items-start justify-between gap-1">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <div className={`w-3 h-3 rounded-full shrink-0 ${group.color}`} />
-                    <span className="text-sm font-semibold truncate">{group.name}</span>
+                  <div className="flex items-start gap-2 min-w-0 flex-1">
+                    <GripVertical className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${group.color}`} />
+                    <span className="text-sm font-bold leading-tight break-words">{group.name}</span>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -265,7 +265,7 @@ const AdminStudentGroups = () => {
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive"
-                        onClick={() => deleteMutation.mutate(group.id)}
+                        onClick={() => handleDeleteGroup(group.id)}
                       >
                         <Trash2 className="h-4 w-4 mr-2" /> Supprimer
                       </DropdownMenuItem>
