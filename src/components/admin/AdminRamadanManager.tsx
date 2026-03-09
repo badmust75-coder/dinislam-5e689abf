@@ -987,6 +987,18 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
         </div>
       </div>
 
+      {/* Day Editor Dialog */}
+      <Dialog open={!!selectedDay} onOpenChange={() => setSelectedDay(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              Jour {currentDayData?.day_number}
+              {currentDayData?.theme && (
+                <Badge variant="outline">{currentDayData.theme}</Badge>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
           <div className="space-y-6">
             {/* Unlock Section */}
             <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
