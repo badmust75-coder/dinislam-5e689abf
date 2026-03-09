@@ -270,6 +270,7 @@ const AdminStudentGroups = () => {
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    if (!groups || groups.length === 0) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
