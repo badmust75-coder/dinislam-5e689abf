@@ -249,11 +249,29 @@ const AdminStudentGroups = () => {
     }
   };
 
-  const handleDragStart = (id: string) => setDraggedId(id);
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', id);
+    setDraggedId(id);
+  };
 
-  const handleDrop = async (targetId: string) => {
-    if (!draggedId || draggedId === targetId || !groups || groups.length === 0) return;
-    const oldIndex = groups.findIndex(g => g.id === draggedId);
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverId(id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    setDragOverId(null);
+    const sourceId = e.dataTransfer.getData('text/plain');
+    if (!sourceId || sourceId === targetId || !groups || groups.length === 0) return;
+    const oldIndex = groups.findIndex(g => g.id === sourceId);
     const newIndex = groups.findIndex(g => g.id === targetId);
     if (oldIndex === -1 || newIndex === -1) return;
 
@@ -273,6 +291,7 @@ const AdminStudentGroups = () => {
           .eq('id', g.id)
       )
     );
+    toast.success('Ordre mis à jour');
   };
 
   const closeDialog = () => {
