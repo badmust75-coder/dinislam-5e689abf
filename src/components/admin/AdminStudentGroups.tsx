@@ -148,7 +148,7 @@ const AdminStudentGroups = () => {
       const { data: groupsData, error } = await (supabase as any)
         .from('student_groups')
         .select('*')
-        .order('display_order');
+        .order('position', { ascending: true });
       if (error) throw error;
 
       const { data: members } = await (supabase as any)
@@ -255,15 +255,15 @@ const AdminStudentGroups = () => {
     const [moved] = newGroups.splice(oldIndex, 1);
     newGroups.splice(newIndex, 0, moved);
 
-    const updated = newGroups.map((g, i) => ({ ...g, display_order: i }));
+    const updated = newGroups.map((g, i) => ({ ...g, position: i }));
     queryClient.setQueryData(['student-groups'], updated);
     setDraggedId(null);
 
     await Promise.all(
-      updated.map((g) =>
+      updated.map((g, i) =>
         (supabase as any)
           .from('student_groups')
-          .update({ display_order: g.display_order })
+          .update({ position: i })
           .eq('id', g.id)
       )
     );
