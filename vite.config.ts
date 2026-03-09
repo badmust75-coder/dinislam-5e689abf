@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
+// Cache bust: v2
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
@@ -31,6 +32,7 @@ export default defineConfig(({ mode }) => ({
     include: [
       "react",
       "react-dom",
+      "@tanstack/react-query",
       "@radix-ui/react-tooltip",
       "@radix-ui/react-dialog",
       "@radix-ui/react-popover",
