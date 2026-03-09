@@ -52,11 +52,21 @@ const getRankDisplay = (rank: number) => {
 };
 
 const getRowStyle = (rank: number, isMe: boolean) => {
-  if (isMe) return 'bg-gradient-to-r from-yellow-200 to-yellow-300 dark:from-yellow-700/50 dark:to-yellow-600/40 border-yellow-400 shadow-md ring-2 ring-yellow-400/60';
-  if (rank === 1) return 'bg-gradient-to-r from-sky-100 to-sky-200 dark:from-sky-900/40 dark:to-sky-800/30 border-sky-300';
-  if (rank === 2) return 'bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900/40 dark:to-green-800/30 border-green-300';
-  if (rank === 3) return 'bg-gradient-to-r from-orange-100 to-orange-200 dark:from-orange-900/40 dark:to-orange-800/30 border-orange-300';
-  return 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-700';
+  if (isMe) return 'border-yellow-400 shadow-md ring-2 ring-yellow-400/60';
+  if (rank === 1) return 'border-blue-300';
+  if (rank === 2) return 'border-green-300';
+  if (rank === 3) return 'border-yellow-300';
+  if (rank === 4) return 'border-orange-300';
+  return 'border-red-200';
+};
+
+const getRankBgColor = (rank: number, isMe: boolean) => {
+  if (isMe) return '#fef08a'; // yellow-200
+  if (rank === 1) return '#dbeafe'; // blue-100
+  if (rank === 2) return '#dcfce7'; // green-100
+  if (rank === 3) return '#fef9c3'; // yellow-100
+  if (rank === 4) return '#ffedd5'; // orange-100
+  return '#fee2e2'; // red-100
 };
 
 const getEncouragementMessage = (rank: number, total: number) => {
@@ -108,6 +118,19 @@ const Classement = () => {
       return data as { group_id: string; user_id: string }[];
     },
   });
+
+  // For non-admin: find the user's group and auto-filter
+  const userGroupId = useMemo(() => {
+    if (isAdmin || !user) return null;
+    const membership = groupMembers.find(m => m.user_id === user.id);
+    return membership?.group_id || null;
+  }, [isAdmin, user, groupMembers]);
+
+  // Effective filter: admin uses manual filter, student uses their group
+  const effectiveFilter = useMemo(() => {
+    if (isAdmin) return groupFilter;
+    return userGroupId || 'global';
+  }, [isAdmin, groupFilter, userGroupId]);
 
   const { data: pointSettings = [] } = useQuery({
     queryKey: ['point-settings'],
@@ -166,13 +189,13 @@ const Classement = () => {
     },
   });
 
-  // Filter and re-rank based on group filter
+  // Filter and re-rank based on effective filter
   const rankings = useMemo(() => {
     if (!allRankings) return undefined;
     let filtered = allRankings;
-    if (groupFilter !== 'global') {
+    if (effectiveFilter !== 'global') {
       const membersInGroup = groupMembers
-        .filter(m => m.group_id === groupFilter)
+        .filter(m => m.group_id === effectiveFilter)
         .map(m => m.user_id);
       filtered = allRankings.filter(e => membersInGroup.includes(e.user_id));
     }
@@ -186,7 +209,7 @@ const Classement = () => {
       }
       return { ...entry, rank: currentRank };
     });
-  }, [allRankings, groupFilter, groupMembers]);
+  }, [allRankings, effectiveFilter, groupMembers]);
 
   const myProfile = allRankings?.find(r => r.user_id === user?.id);
   const myInFilter = rankings?.find(r => r.user_id === user?.id);
@@ -278,34 +301,36 @@ const Classement = () => {
           <p className="text-sm text-muted-foreground">Qui sera au sommet cette semaine ?</p>
         </div>
 
-        {/* Group filter */}
-        <div className="flex gap-2 justify-center flex-wrap">
-          <button
-            onClick={() => setGroupFilter('global')}
-            className={cn(
-              'px-3 py-1.5 rounded-full text-xs font-semibold transition-all',
-              groupFilter === 'global'
-                ? 'bg-primary text-primary-foreground shadow-md'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            )}
-          >
-            🌍 Global
-          </button>
-          {studentGroups.map(group => (
+        {/* Group filter - admin only */}
+        {isAdmin && (
+          <div className="flex gap-2 justify-center flex-wrap">
             <button
-              key={group.id}
-              onClick={() => setGroupFilter(group.id)}
+              onClick={() => setGroupFilter('global')}
               className={cn(
                 'px-3 py-1.5 rounded-full text-xs font-semibold transition-all',
-                groupFilter === group.id
+                groupFilter === 'global'
                   ? 'bg-primary text-primary-foreground shadow-md'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               )}
             >
-              👥 {group.name}
+              🌍 Global
             </button>
-          ))}
-        </div>
+            {studentGroups.map(group => (
+              <button
+                key={group.id}
+                onClick={() => setGroupFilter(group.id)}
+                className={cn(
+                  'px-3 py-1.5 rounded-full text-xs font-semibold transition-all',
+                  groupFilter === group.id
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                )}
+              >
+                👥 {group.name}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* My position highlight */}
         {myRanking && encouragement && (
@@ -344,7 +369,7 @@ const Classement = () => {
             <Star className="h-12 w-12 mx-auto mb-3 text-secondary/50" />
             <p>Aucun classement pour le moment</p>
             <p className="text-xs mt-1">
-              {groupFilter !== 'global'
+              {effectiveFilter !== 'global'
                 ? 'Aucun élève dans ce groupe'
                 : 'Les points seront attribués à chaque validation !'}
             </p>
@@ -361,7 +386,7 @@ const Classement = () => {
                     getRowStyle(entry.rank, isMe),
                     isMe && 'scale-[1.02]',
                   )}
-                  style={{ animationDelay: `${index * 40}ms` }}
+                  style={{ animationDelay: `${index * 40}ms`, backgroundColor: getRankBgColor(entry.rank, isMe) }}
                 >
                   <div className="flex-shrink-0 w-10 flex justify-center">
                     {getRankDisplay(entry.rank)}
@@ -386,7 +411,7 @@ const Classement = () => {
         )}
 
         {/* User not in current filter */}
-        {groupFilter !== 'global' && !myInFilter && myProfile && (
+        {effectiveFilter !== 'global' && !myInFilter && myProfile && (
           <div className="text-center py-3 px-4 rounded-xl bg-muted/50 border border-border">
             <p className="text-sm text-muted-foreground">Vous n'êtes pas dans ce groupe</p>
           </div>
