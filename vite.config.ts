@@ -16,6 +16,9 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Force single React instance for all imports
+      "react": path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
     dedupe: [
       "react", 
@@ -31,6 +34,9 @@ export default defineConfig(({ mode }) => ({
       "react-dom/client",
       "react/jsx-runtime",
       "react/jsx-dev-runtime",
+      "@radix-ui/react-tooltip",
+      "@tanstack/react-query",
     ],
+    force: true,
   },
 }));
