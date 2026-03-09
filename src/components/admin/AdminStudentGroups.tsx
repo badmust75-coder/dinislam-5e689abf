@@ -58,25 +58,30 @@ const DraggableGroupCard = ({
   onDelete,
   onDragStart,
   onDragOver,
+  onDragEnd,
   onDrop,
   isDragging,
+  isDragOver,
 }: {
   group: StudentGroup;
   onEdit: (group: StudentGroup) => void;
   onDelete: (groupId: string) => void;
-  onDragStart: (id: string) => void;
+  onDragStart: (e: React.DragEvent, id: string) => void;
   onDragOver: (e: React.DragEvent) => void;
-  onDrop: (id: string) => void;
+  onDragEnd: () => void;
+  onDrop: (e: React.DragEvent, id: string) => void;
   isDragging: boolean;
+  isDragOver: boolean;
 }) => {
   return (
     <Card
       draggable
-      onDragStart={() => onDragStart(group.id)}
+      onDragStart={(e) => onDragStart(e, group.id)}
       onDragOver={onDragOver}
-      onDrop={() => onDrop(group.id)}
-      className="transition-shadow"
-      style={{ opacity: isDragging ? 0.5 : 1 }}
+      onDragEnd={onDragEnd}
+      onDrop={(e) => onDrop(e, group.id)}
+      className={`transition-all cursor-grab active:cursor-grabbing ${isDragOver ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+      style={{ opacity: isDragging ? 0.4 : 1 }}
     >
       <CardContent className="p-3">
         <div className="flex items-start justify-between gap-1">
@@ -140,6 +145,7 @@ const AdminStudentGroups = () => {
   const [genderFilter, setGenderFilter] = useState<GenderFilter>('tous');
 
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   // Fetch groups with members
   const { data: groups = [] } = useQuery({
@@ -243,11 +249,29 @@ const AdminStudentGroups = () => {
     }
   };
 
-  const handleDragStart = (id: string) => setDraggedId(id);
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', id);
+    setDraggedId(id);
+  };
 
-  const handleDrop = async (targetId: string) => {
-    if (!draggedId || draggedId === targetId || !groups || groups.length === 0) return;
-    const oldIndex = groups.findIndex(g => g.id === draggedId);
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverId(id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    setDragOverId(null);
+    const sourceId = e.dataTransfer.getData('text/plain');
+    if (!sourceId || sourceId === targetId || !groups || groups.length === 0) return;
+    const oldIndex = groups.findIndex(g => g.id === sourceId);
     const newIndex = groups.findIndex(g => g.id === targetId);
     if (oldIndex === -1 || newIndex === -1) return;
 
@@ -267,6 +291,7 @@ const AdminStudentGroups = () => {
           .eq('id', g.id)
       )
     );
+    toast.success('Ordre mis à jour');
   };
 
   const closeDialog = () => {
@@ -324,9 +349,11 @@ const AdminStudentGroups = () => {
               onEdit={openEdit}
               onDelete={handleDeleteGroup}
               onDragStart={handleDragStart}
-              onDragOver={(e) => e.preventDefault()}
+              onDragOver={(e) => handleDragOver(e, group.id)}
+              onDragEnd={handleDragEnd}
               onDrop={handleDrop}
               isDragging={draggedId === group.id}
+              isDragOver={dragOverId === group.id && draggedId !== group.id}
             />
           ))}
         </div>
