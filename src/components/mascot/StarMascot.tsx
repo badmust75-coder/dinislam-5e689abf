@@ -293,7 +293,7 @@ Clique sur n'importe quel module pour commencer !
             
             <CardContent className="space-y-4">
               {/* Messages */}
-              <div className="max-h-60 overflow-y-auto space-y-3 bg-white/50 rounded-lg p-3">
+              <div className="max-h-60 overflow-y-auto space-y-3 bg-background/50 rounded-lg p-3">
                 {messages.map((message) => (
                   <div
                     key={message.id}
