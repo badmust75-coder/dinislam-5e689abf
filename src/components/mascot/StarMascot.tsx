@@ -357,7 +357,6 @@ Clique sur n'importe quel module pour commencer !
       };
     }
   }, [isDragging, dragOffset]);
-  };
 
   if (!user) return null;
 
