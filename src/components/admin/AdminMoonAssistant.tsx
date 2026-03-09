@@ -44,9 +44,6 @@ const AdminMoonAssistant = () => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Don't render for non-admin
-  if (!isAdmin) return null;
-
   useEffect(() => {
     try {
       localStorage.setItem('adminMoon-position', JSON.stringify(position));
