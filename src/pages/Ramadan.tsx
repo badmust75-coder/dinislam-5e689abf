@@ -375,30 +375,30 @@ const Ramadan = () => {
             // Future locked day
             const isFutureLockedDay = isFutureDay(day);
 
-            const getDayClasses = () => {
-              // Completed: dark green background
-              if (isCompleted) {
-                return 'bg-gradient-to-br from-green-600 to-green-700 text-white shadow-md hover:scale-105 cursor-pointer';
-              }
-              // Current day (J): ORANGE background
-              if (isCurrentDay) {
-                return 'bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-md hover:scale-105 cursor-pointer';
-              }
-              // Accessible window (J-1, J-2, J-3): light green
-              if (isAccessibleWindow) {
-                return 'bg-green-200 text-green-800 hover:scale-105 cursor-pointer';
-              }
-              // Future locked: light gray
-              if (isFutureLockedDay) {
-                return 'bg-gray-200 text-gray-500 cursor-not-allowed';
-              }
-              // Old locked: light gray
-              if (isOldLockedDay) {
-                return 'bg-gray-200 text-gray-500 cursor-not-allowed';
-              }
+            // Determine if previous day quiz is completed (for accessible window)
+            const prevDay = days.find(d => d.day_number === day.day_number - 1);
+            const prevDayCompleted = !prevDay || !!getDayProgress(prevDay.id)?.quiz_completed;
+            const isAccessibleBlocked = isAccessibleWindow && !prevDayCompleted;
+
+            // Priority-based styling
+            const getDayStyle = (): { bg: string; showLock: boolean; showMoon: boolean } => {
+              // 1. Completed
+              if (isCompleted) return { bg: 'bg-[#22c55e] text-white shadow-md hover:scale-105 cursor-pointer', showLock: false, showMoon: false };
+              // 2. Current day, not completed
+              if (isCurrentDay) return { bg: 'bg-[#f97316] text-white shadow-md hover:scale-105 cursor-pointer', showLock: false, showMoon: true };
+              // 3. Accessible window, previous completed
+              if (isAccessibleWindow && prevDayCompleted) return { bg: 'bg-[#dcfce7] text-green-800 hover:scale-105 cursor-pointer', showLock: false, showMoon: true };
+              // 4. Accessible window, previous NOT completed
+              if (isAccessibleWindow && !prevDayCompleted) return { bg: 'bg-[#dcfce7] text-green-800', showLock: true, showMoon: true };
+              // 5. Old locked
+              if (isOldLockedDay) return { bg: 'bg-[#fef3c7] text-amber-700', showLock: true, showMoon: true };
+              // 6. Future
+              if (isFutureLockedDay) return { bg: 'bg-[#fef3c7] text-amber-700', showLock: true, showMoon: true };
               // Default fallback
-              return 'bg-gray-200 text-gray-500 cursor-not-allowed';
+              return { bg: 'bg-[#fef3c7] text-amber-700', showLock: true, showMoon: true };
             };
+
+            const style = getDayStyle();
 
             return (
               <button
@@ -406,21 +406,20 @@ const Ramadan = () => {
                 onClick={() => handleDayClick(day)}
                 className={cn(
                   'aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-200 relative',
-                  getDayClasses()
+                  style.bg
                 )}
               >
-                {/* Small lock on old locked days (top-right) */}
-                {isOldLockedDay && !isCompleted && (
+                {style.showLock && (
                   <span className="absolute top-0.5 right-0.5 text-[8px]">🔒</span>
                 )}
 
                 {isCompleted ? (
-                  <>
-                    <Check className="h-5 w-5" />
-                    <span className="text-[10px] mt-0.5">{day.day_number}</span>
-                  </>
+                  <Check className="h-5 w-5" />
                 ) : (
-                  <span className="text-base font-bold">{day.day_number}</span>
+                  <>
+                    {style.showMoon && <span className="text-[10px] leading-none">🌙</span>}
+                    <span className={cn("font-bold", style.showMoon ? "text-xs" : "text-base")}>{day.day_number}</span>
+                  </>
                 )}
               </button>
             );
