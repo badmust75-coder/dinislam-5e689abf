@@ -369,7 +369,7 @@ const Classement = () => {
             <Star className="h-12 w-12 mx-auto mb-3 text-secondary/50" />
             <p>Aucun classement pour le moment</p>
             <p className="text-xs mt-1">
-              {groupFilter !== 'global'
+              {effectiveFilter !== 'global'
                 ? 'Aucun élève dans ce groupe'
                 : 'Les points seront attribués à chaque validation !'}
             </p>
