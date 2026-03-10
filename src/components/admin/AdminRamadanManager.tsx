@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, Video, HelpCircle, Trash2, Save, Loader2, Rocket, RotateCcw, Plus, GripVertical, AlertTriangle, FileText, Volume2, Image, Lock, Unlock, Check, Moon } from 'lucide-react';
+import { ArrowLeft, Upload, Video, HelpCircle, Trash2, Save, Loader2, Rocket, RotateCcw, Plus, GripVertical, AlertTriangle, FileText, Volume2, Image, Lock, Unlock, Check, Moon, Link } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -186,6 +187,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   const activityInputRef = useRef<HTMLInputElement>(null);
   const [themeInput, setThemeInput] = useState('');
   const [savingTheme, setSavingTheme] = useState(false);
+  const [youtubeLink, setYoutubeLink] = useState('');
 
   // Unlimited questions
   const [questions, setQuestions] = useState<QuestionForm[]>([emptyQuestion()]);
@@ -349,6 +351,45 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-day-videos'] });
       toast({ title: 'Vidéo supprimée' });
+    },
+  });
+
+  // Add YouTube link mutation
+  const convertYoutubeToEmbed = (url: string): string | null => {
+    let videoId: string | null = null;
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]+)/,
+      /(?:youtu\.be\/)([a-zA-Z0-9_-]+)/,
+      /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/,
+      /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/,
+    ];
+    for (const p of patterns) {
+      const match = url.match(p);
+      if (match) { videoId = match[1]; break; }
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  };
+
+  const addYoutubeLinkMutation = useMutation({
+    mutationFn: async ({ dayId, url }: { dayId: number; url: string }) => {
+      const embedUrl = convertYoutubeToEmbed(url);
+      if (!embedUrl) throw new Error('Lien YouTube invalide');
+      const existingVideos = getVideosForDay(dayId);
+      const { error } = await supabase.from('ramadan_day_videos').insert({
+        day_id: dayId,
+        video_url: embedUrl,
+        file_name: `YouTube: ${embedUrl.split('/embed/')[1]}`,
+        display_order: existingVideos.length,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-ramadan-day-videos'] });
+      toast({ title: 'Lien YouTube ajouté avec succès' });
+      setYoutubeLink('');
+    },
+    onError: (error) => {
+      toast({ title: error.message || 'Lien YouTube invalide', variant: 'destructive' });
     },
   });
 
@@ -1122,7 +1163,11 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
                         <p className="text-xs font-medium text-muted-foreground">Vidéo {idx + 1}</p>
                         <p className="text-xs truncate">{video.file_name || 'Vidéo téléversée'}</p>
                       </div>
-                      <video src={video.video_url} className="h-10 w-16 rounded object-cover bg-black flex-shrink-0" />
+                      {video.video_url.includes('youtube.com/embed') ? (
+                        <div className="h-10 w-16 rounded bg-red-600 flex items-center justify-center flex-shrink-0 text-white text-[8px] font-bold">YT</div>
+                      ) : (
+                        <video src={video.video_url} className="h-10 w-16 rounded object-cover bg-black flex-shrink-0" />
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -1146,25 +1191,57 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
                 </div>
               )}
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="video/*"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading || uploadVideoMutation.isPending}
-                variant="outline"
-                className="w-full"
-              >
-                {uploading ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Téléversement...</>
-                ) : (
-                  <><Upload className="h-4 w-4 mr-2" />Ajouter une vidéo</>
-                )}
-              </Button>
+              <Tabs defaultValue="file" className="w-full">
+                <TabsList className="w-full">
+                  <TabsTrigger value="file" className="flex-1 text-xs">📁 Fichier</TabsTrigger>
+                  <TabsTrigger value="youtube" className="flex-1 text-xs">🔗 Lien YouTube</TabsTrigger>
+                </TabsList>
+                <TabsContent value="file">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="video/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading || uploadVideoMutation.isPending}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {uploading ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Téléversement...</>
+                    ) : (
+                      <><Upload className="h-4 w-4 mr-2" />Ajouter une vidéo</>
+                    )}
+                  </Button>
+                </TabsContent>
+                <TabsContent value="youtube">
+                  <div className="flex gap-2">
+                    <Input
+                      value={youtubeLink}
+                      onChange={(e) => setYoutubeLink(e.target.value)}
+                      placeholder="Colle ton lien YouTube ici..."
+                      className="flex-1"
+                    />
+                    <Button
+                      disabled={!youtubeLink.trim() || addYoutubeLinkMutation.isPending}
+                      onClick={() => {
+                        if (selectedDay && youtubeLink.trim()) {
+                          addYoutubeLinkMutation.mutate({ dayId: selectedDay, url: youtubeLink.trim() });
+                        }
+                      }}
+                    >
+                      {addYoutubeLinkMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>Ajouter</>
+                      )}
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
 
             {/* Quiz Section: Unlimited with DnD */}
