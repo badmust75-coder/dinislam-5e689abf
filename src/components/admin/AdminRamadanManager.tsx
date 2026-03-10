@@ -1151,33 +1151,30 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
             <div className="space-y-3" ref={videoSectionRef}>
               <Label className="flex items-center gap-2 text-base font-semibold">
                 <Video className="h-4 w-4 text-primary" />
-                Vidéos du jour ({currentVideos.length})
+                Contenu du jour ({currentVideos.length})
               </Label>
 
               {currentVideos.length > 0 ? (
-                <div className="space-y-2">
-                  {currentVideos.map((video, idx) => (
-                    <div key={video.id} className="flex items-center gap-2 p-2 border rounded-lg bg-muted/30">
-                      <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-muted-foreground">Vidéo {idx + 1}</p>
-                        <p className="text-xs truncate">{video.file_name || 'Vidéo téléversée'}</p>
-                      </div>
-                      {video.video_url.includes('youtube.com/embed') ? (
-                        <div className="h-10 w-16 rounded bg-red-600 flex items-center justify-center flex-shrink-0 text-white text-[8px] font-bold">YT</div>
-                      ) : (
-                        <video src={video.video_url} className="h-10 w-16 rounded object-cover bg-black flex-shrink-0" />
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive flex-shrink-0"
-                        onClick={() => setDeleteTarget({ type: 'video', id: video.id })}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                <div className="space-y-1.5">
+                  {currentVideos.map((video) => {
+                    const isYT = video.video_url.includes('youtube.com/embed');
+                    const contentType: 'youtube' | 'fichier' | 'audio' = isYT ? 'youtube' : 'fichier';
+                    return (
+                      <ContentItemCard
+                        key={video.id}
+                        id={video.id}
+                        title={video.file_name || (isYT ? 'Vidéo YouTube' : 'Vidéo téléversée')}
+                        contentType={contentType}
+                        url={video.video_url}
+                        onDelete={(id) => setDeleteTarget({ type: 'video', id })}
+                        onUpdateTitle={(id, title) => {
+                          supabase.from('ramadan_day_videos').update({ file_name: title }).eq('id', id).then(() => {
+                            queryClient.invalidateQueries({ queryKey: ['admin-ramadan-day-videos'] });
+                          });
+                        }}
+                      />
+                    );
+                  })}
                 </div>
               ) : currentDayData?.video_url ? (
                 <div className="p-2 border rounded-lg bg-muted/30">
@@ -1187,61 +1184,28 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
               ) : (
                 <div className="border-2 border-dashed rounded-lg p-8 text-center">
                   <Video className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">Aucune vidéo</p>
+                  <p className="text-sm text-muted-foreground">Aucun contenu</p>
                 </div>
               )}
 
-              <Tabs defaultValue="file" className="w-full">
-                <TabsList className="w-full">
-                  <TabsTrigger value="file" className="flex-1 text-xs">📁 Fichier</TabsTrigger>
-                  <TabsTrigger value="youtube" className="flex-1 text-xs">🔗 Lien YouTube</TabsTrigger>
-                </TabsList>
-                <TabsContent value="file">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="video/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  <Button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading || uploadVideoMutation.isPending}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    {uploading ? (
-                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Téléversement...</>
-                    ) : (
-                      <><Upload className="h-4 w-4 mr-2" />Ajouter une vidéo</>
-                    )}
-                  </Button>
-                </TabsContent>
-                <TabsContent value="youtube">
-                  <div className="flex gap-2">
-                    <Input
-                      value={youtubeLink}
-                      onChange={(e) => setYoutubeLink(e.target.value)}
-                      placeholder="Colle ton lien YouTube ici..."
-                      className="flex-1"
-                    />
-                    <Button
-                      disabled={!youtubeLink.trim() || addYoutubeLinkMutation.isPending}
-                      onClick={() => {
-                        if (selectedDay && youtubeLink.trim()) {
-                          addYoutubeLinkMutation.mutate({ dayId: selectedDay, url: youtubeLink.trim() });
-                        }
-                      }}
-                    >
-                      {addYoutubeLinkMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>Ajouter</>
-                      )}
-                    </Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <ContentUploadTabs
+                onUploadFile={(file) => {
+                  if (selectedDay && !uploadVideoMutation.isPending) {
+                    uploadVideoMutation.mutate({ dayId: selectedDay, file });
+                  }
+                }}
+                onAddYoutubeLink={(embedUrl) => {
+                  if (selectedDay) {
+                    addYoutubeLinkMutation.mutate({ dayId: selectedDay, url: embedUrl });
+                  }
+                }}
+                onUploadAudio={(file) => {
+                  if (selectedDay) {
+                    uploadActivityMutation.mutate({ dayId: selectedDay, file });
+                  }
+                }}
+                isUploading={uploading || uploadVideoMutation.isPending || addYoutubeLinkMutation.isPending}
+              />
             </div>
 
             {/* Quiz Section: Unlimited with DnD */}
