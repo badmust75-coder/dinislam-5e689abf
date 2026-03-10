@@ -335,18 +335,6 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
 
                           {/* Actions */}
                           <div className="flex gap-1 shrink-0">
-                            <div className="relative">
-                              <input
-                                type="file" multiple
-                                accept="video/*,audio/*,application/pdf,image/*"
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                onChange={(e) => { if (e.target.files?.length) handleUploadContent(card.id, e.target.files); e.target.value = ''; }}
-                                disabled={isThisUploading}
-                              />
-                              <Button variant="outline" size="sm" disabled={isThisUploading} className="pointer-events-none h-8 px-2">
-                                {isThisUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                              </Button>
-                            </div>
                             <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => openEdit(card)}>
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
@@ -360,19 +348,28 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
                         {cardContents.length > 0 && (
                           <div className="ml-14 space-y-1">
                             {cardContents.map((content: any) => (
-                              <div key={content.id} className="flex items-center justify-between bg-muted/50 rounded-lg px-2 py-1">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  {getContentIcon(content.content_type)}
-                                  <span className="text-xs truncate">{content.file_name}</span>
-                                </div>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive shrink-0"
-                                  onClick={() => setDeleteContentId(content.id)}>
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
+                              <ContentItemCard
+                                key={content.id}
+                                id={content.id}
+                                title={content.file_name}
+                                contentType={mapContentType(content.content_type)}
+                                url={content.file_url}
+                                onDelete={(id) => setDeleteContentId(id)}
+                                onUpdateTitle={(id, title) => updateContentTitleMutation.mutate({ id, title })}
+                              />
                             ))}
                           </div>
                         )}
+
+                        {/* Upload tabs */}
+                        <div className="ml-14">
+                          <ContentUploadTabs
+                            onUploadFile={(file) => handleUploadContent(card.id, file, 'fichier')}
+                            onAddYoutubeLink={(url) => handleAddYoutubeContent(card.id, url)}
+                            onUploadAudio={(file) => handleUploadContent(card.id, file, 'audio')}
+                            isUploading={isThisUploading}
+                          />
+                        </div>
                       </CardContent>
                     </Card>
                   </SortableItem>
