@@ -390,6 +390,15 @@ const RamadanDayDialog = ({
     }
   }, [currentVideoIdx, step]);
 
+  // Auto-mark YouTube videos as watched after 10 seconds (can't track iframe progress)
+  useEffect(() => {
+    if (step !== 'video' || !currentVideo || !currentVideo.video_url.includes('youtube.com/embed')) return;
+    const timer = setTimeout(() => {
+      markVideoAsWatched(currentVideo.id);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [step, currentVideo, markVideoAsWatched]);
+
   const goToQuiz = () => {
     setStep('quiz');
     setTimeout(() => {
