@@ -543,7 +543,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       else if (file.type.startsWith('image/')) type = 'document';
 
       const existingActivities = getActivitiesForDay(dayId);
-      const { error: insertError } = await supabase
+      const { error: insertError } = await (supabase as any)
         .from('ramadan_day_activities')
         .insert({
           day_id: dayId,
