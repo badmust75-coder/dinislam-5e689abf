@@ -321,7 +321,7 @@ const SouratesPage = () => {
         setSelectedSourate(null);
         
         // Create a pending validation request for admin (ignore if already pending)
-        await supabase
+        await (supabase as any)
           .from('sourate_validation_requests')
           .insert({
             user_id: user.id,
