@@ -140,12 +140,12 @@ const SouratesPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSourate, setSelectedSourate] = useState<typeof SOURATES_DATA[0] | null>(null);
-  const [sourateProgress, setSourateProgress] = useState<Map<number, { is_validated: boolean; is_memorized: boolean; progress_percentage: number }>>(new Map());
+  const [sourateProgress, setSourateProgress] = useState<Map<string, { is_validated: boolean; is_memorized: boolean; progress_percentage: number }>>(new Map());
   const [verseProgress, setVerseProgress] = useState<Map<string, boolean>>(new Map());
-  const [adminUnlocks, setAdminUnlocks] = useState<Set<number>>(new Set());
+  const [adminUnlocks, setAdminUnlocks] = useState<Set<string>>(new Set());
   const [sourateContents, setSourateContents] = useState<any[]>([]);
   const [unlockDialog, setUnlockDialog] = useState<{ open: boolean; sourateName: string; sourateNumber: number }>({ open: false, sourateName: '', sourateNumber: 0 });
-  const [dbSourates, setDbSourates] = useState<Map<number, number>>(new Map());
+  const [dbSourates, setDbSourates] = useState<Map<number, string>>(new Map());
 
   const loadAll = useCallback(async () => {
     if (!user) return;
@@ -166,15 +166,15 @@ const SouratesPage = () => {
         supabase.from('sourates').select('id, number'),
       ]);
 
-      const idMap = new Map<number, number>();
+      const idMap = new Map<number, string>();
       souratesDb?.forEach(s => idMap.set(s.number, s.id));
       setDbSourates(idMap);
 
-      const pMap = new Map<number, { is_validated: boolean; is_memorized: boolean; progress_percentage: number }>();
+      const pMap = new Map<string, { is_validated: boolean; is_memorized: boolean; progress_percentage: number }>();
       progressData?.forEach(p => {
         pMap.set(p.sourate_id, {
           is_validated: p.is_validated,
-          is_memorized: p.is_memorized,
+          is_memorized: (p as any).is_memorized ?? false,
           progress_percentage: p.progress_percentage,
         });
       });
@@ -182,11 +182,11 @@ const SouratesPage = () => {
 
       const vMap = new Map<string, boolean>();
       verseData?.forEach(v => {
-        vMap.set(`${v.sourate_id}-${v.verse_number}`, v.is_validated);
+        vMap.set(`${v.sourate_id}-${v.verse_number}`, (v as any).is_validated ?? v.is_memorized);
       });
       setVerseProgress(vMap);
 
-      const uSet = new Set<number>();
+      const uSet = new Set<string>();
       unlockData?.forEach(u => uSet.add(u.sourate_id));
       setAdminUnlocks(uSet);
 
@@ -263,7 +263,7 @@ const SouratesPage = () => {
     return prevProgress?.is_validated === true;
   };
 
-  const handleVerseToggle = async (sourateDbId: number, verseNumber: number, sourateNumber: number, versesCount: number) => {
+  const handleVerseToggle = async (sourateDbId: string, verseNumber: number, sourateNumber: number, versesCount: number) => {
     if (!user) return;
 
     const key = `${sourateDbId}-${verseNumber}`;
@@ -277,13 +277,13 @@ const SouratesPage = () => {
     });
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('user_sourate_verse_progress')
         .upsert({
           user_id: user.id,
           sourate_id: sourateDbId,
           verse_number: verseNumber,
-          is_validated: newValue,
+          is_memorized: newValue,
         }, { onConflict: 'user_id,sourate_id,verse_number' });
 
       if (error) throw error;
@@ -300,14 +300,13 @@ const SouratesPage = () => {
 
       // Update progress percentage, preserving existing is_validated and is_memorized
       const existing = sourateProgress.get(sourateDbId);
-      await supabase
+      await (supabase as any)
         .from('user_sourate_progress')
         .upsert({
           user_id: user.id,
           sourate_id: sourateDbId,
           progress_percentage: percentage,
           is_validated: existing?.is_validated || false,
-          is_memorized: existing?.is_memorized || false,
         }, { onConflict: 'user_id,sourate_id' });
 
       setSourateProgress(prev => {
@@ -322,7 +321,7 @@ const SouratesPage = () => {
         setSelectedSourate(null);
         
         // Create a pending validation request for admin (ignore if already pending)
-        await supabase
+        await (supabase as any)
           .from('sourate_validation_requests')
           .insert({
             user_id: user.id,

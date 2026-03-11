@@ -581,7 +581,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
 
   // Toggle is_unlocked on a day (global unlock)
   const toggleDayUnlockMutation = useMutation({
-    mutationFn: async ({ dayId, isUnlocked }: { dayId: number; isUnlocked: boolean }) => {
+    mutationFn: async ({ dayId, isUnlocked }: { dayId: string; isUnlocked: boolean }) => {
       const { error } = await (supabase as any).from('ramadan_days').update({ is_unlocked: isUnlocked }).eq('id', dayId);
       if (error) throw error;
     },
@@ -594,7 +594,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
 
   // Add per-student exception
   const addExceptionMutation = useMutation({
-    mutationFn: async ({ userId, dayId }: { userId: string; dayId: number }) => {
+    mutationFn: async ({ userId, dayId }: { userId: string; dayId: string }) => {
       const { error } = await (supabase as any).from('ramadan_day_exceptions').upsert({ user_id: userId, day_id: dayId, is_unlocked: true }, { onConflict: 'user_id,day_id' });
       if (error) throw error;
     },
