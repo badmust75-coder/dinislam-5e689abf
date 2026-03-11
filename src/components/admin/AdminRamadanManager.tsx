@@ -289,7 +289,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
     queryFn: async () => {
       const { data, error } = await (supabase as any).from('ramadan_day_exceptions').select('*');
       if (error) throw error;
-      return data as { id: string; user_id: string; day_id: number; is_unlocked: boolean; created_at: string }[];
+      return data as { id: string; user_id: string; day_id: string; is_unlocked: boolean; created_at: string }[];
     },
   });
 
