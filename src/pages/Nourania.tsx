@@ -218,7 +218,7 @@ const Nourania = () => {
   };
 
   // Get moon color classes based on lesson status
-  const getMoonColors = (lessonId: number, index: number) => {
+  const getMoonColors = (lessonId: string, index: number) => {
     const validated = isLessonValidated(lessonId);
     const pending = isLessonPendingValidation(lessonId);
     const started = hasLessonBeenStarted(lessonId);

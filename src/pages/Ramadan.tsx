@@ -235,8 +235,8 @@ const Ramadan = () => {
   const saveQuizResponseMutation = useMutation({
     mutationFn: async ({ quizId, selectedOption, attemptNumber, isCorrect }: { quizId: string; selectedOption: number; attemptNumber: number; isCorrect: boolean }) => {
       if (!user?.id) throw new Error('Non connecté');
-      const { error } = await supabase.from('quiz_responses')
-        .insert({ user_id: user.id, quiz_id: quizId, selected_option: selectedOption, attempt_number: attemptNumber, is_correct: isCorrect });
+      const { error } = await (supabase as any).from('quiz_responses')
+        .insert({ user_id: user.id, quiz_id: quizId, selected_answer: String(selectedOption), attempt_number: attemptNumber, is_correct: isCorrect });
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ramadan-quiz-responses'] }),
