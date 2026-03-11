@@ -522,7 +522,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
 
   // Upload activity mutation
   const uploadActivityMutation = useMutation({
-    mutationFn: async ({ dayId, file }: { dayId: number; file: File }) => {
+    mutationFn: async ({ dayId, file }: { dayId: string; file: File }) => {
       setUploadingActivity(true);
       const fileExt = file.name.split('.').pop();
       const fileName = `activity-${dayId}-${Date.now()}.${fileExt}`;
