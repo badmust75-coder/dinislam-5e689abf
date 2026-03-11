@@ -185,11 +185,11 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   const videoSectionRef = useRef<HTMLDivElement>(null);
   const quizSectionRef = useRef<HTMLDivElement>(null);
 
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [scrollToSection, setScrollToSection] = useState<'video' | 'quiz' | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadingActivity, setUploadingActivity] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ type: 'quiz' | 'allQuizzes' | 'video' | 'activity'; id?: string; dayId?: number } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'quiz' | 'allQuizzes' | 'video' | 'activity'; id?: string; dayId?: string } | null>(null);
   const activityInputRef = useRef<HTMLInputElement>(null);
   const [themeInput, setThemeInput] = useState('');
   const [savingTheme, setSavingTheme] = useState(false);
