@@ -277,13 +277,13 @@ const SouratesPage = () => {
     });
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('user_sourate_verse_progress')
         .upsert({
           user_id: user.id,
           sourate_id: sourateDbId,
           verse_number: verseNumber,
-          is_validated: newValue,
+          is_memorized: newValue,
         }, { onConflict: 'user_id,sourate_id,verse_number' });
 
       if (error) throw error;
