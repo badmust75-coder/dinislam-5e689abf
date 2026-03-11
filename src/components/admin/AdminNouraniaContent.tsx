@@ -69,7 +69,7 @@ const AdminNouraniaContent = () => {
     finally { setIsUploading(false); }
   }, [user, contents, refetchContents]);
 
-  const handleAddYoutube = useCallback(async (lessonId: number, embedUrl: string) => {
+  const handleAddYoutube = useCallback(async (lessonId: string, embedUrl: string) => {
     if (!user?.id) return;
     setIsUploading(true);
     try {
