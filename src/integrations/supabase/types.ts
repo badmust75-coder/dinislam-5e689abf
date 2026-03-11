@@ -196,6 +196,7 @@ export type Database = {
           created_at: string | null
           details: Json | null
           id: string
+          is_read: boolean | null
           level: string | null
           user_id: string | null
         }
@@ -204,6 +205,7 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
+          is_read?: boolean | null
           level?: string | null
           user_id?: string | null
         }
@@ -212,6 +214,7 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
+          is_read?: boolean | null
           level?: string | null
           user_id?: string | null
         }
@@ -1208,7 +1211,9 @@ export type Database = {
           id: string
           is_admin: boolean | null
           is_approved: boolean | null
+          last_seen: string | null
           notification_prompt_dismissed: boolean | null
+          notification_prompt_later_count: number | null
           phone: string | null
           points: number | null
           updated_at: string | null
@@ -1227,7 +1232,9 @@ export type Database = {
           id?: string
           is_admin?: boolean | null
           is_approved?: boolean | null
+          last_seen?: string | null
           notification_prompt_dismissed?: boolean | null
+          notification_prompt_later_count?: number | null
           phone?: string | null
           points?: number | null
           updated_at?: string | null
@@ -1246,7 +1253,9 @@ export type Database = {
           id?: string
           is_admin?: boolean | null
           is_approved?: boolean | null
+          last_seen?: string | null
           notification_prompt_dismissed?: boolean | null
+          notification_prompt_later_count?: number | null
           phone?: string | null
           points?: number | null
           updated_at?: string | null
@@ -1820,6 +1829,7 @@ export type Database = {
       }
       student_groups: {
         Row: {
+          color: string | null
           created_at: string | null
           created_by: string | null
           description: string | null
@@ -1827,6 +1837,7 @@ export type Database = {
           name: string
         }
         Insert: {
+          color?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -1834,6 +1845,7 @@ export type Database = {
           name: string
         }
         Update: {
+          color?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
