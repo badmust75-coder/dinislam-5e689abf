@@ -51,7 +51,10 @@ export type Database = {
           id: string
           last_message: string | null
           last_message_at: string | null
+          messages: Json | null
+          topic: string | null
           unread_count: number | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -60,7 +63,10 @@ export type Database = {
           id?: string
           last_message?: string | null
           last_message_at?: string | null
+          messages?: Json | null
+          topic?: string | null
           unread_count?: number | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -69,7 +75,10 @@ export type Database = {
           id?: string
           last_message?: string | null
           last_message_at?: string | null
+          messages?: Json | null
+          topic?: string | null
           unread_count?: number | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
