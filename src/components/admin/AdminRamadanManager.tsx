@@ -506,7 +506,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
 
   // Delete all quizzes for a day
   const deleteAllQuizzesMutation = useMutation({
-    mutationFn: async (dayId: number) => {
+    mutationFn: async (dayId: string) => {
       const dayQuizzes = getQuizzesForDay(dayId);
       for (const q of dayQuizzes) {
         await supabase.from('quiz_responses').delete().eq('quiz_id', q.id);
