@@ -263,7 +263,7 @@ const SouratesPage = () => {
     return prevProgress?.is_validated === true;
   };
 
-  const handleVerseToggle = async (sourateDbId: number, verseNumber: number, sourateNumber: number, versesCount: number) => {
+  const handleVerseToggle = async (sourateDbId: string, verseNumber: number, sourateNumber: number, versesCount: number) => {
     if (!user) return;
 
     const key = `${sourateDbId}-${verseNumber}`;
