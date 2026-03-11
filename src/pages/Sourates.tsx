@@ -186,7 +186,7 @@ const SouratesPage = () => {
       });
       setVerseProgress(vMap);
 
-      const uSet = new Set<number>();
+      const uSet = new Set<string>();
       unlockData?.forEach(u => uSet.add(u.sourate_id));
       setAdminUnlocks(uSet);
 
