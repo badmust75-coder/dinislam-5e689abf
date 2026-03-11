@@ -75,7 +75,7 @@ const AdminSourateContent = () => {
     finally { setIsUploading(false); }
   }, [user, contents, refetchContents]);
 
-  const handleAddYoutube = useCallback(async (sourateId: number, embedUrl: string) => {
+  const handleAddYoutube = useCallback(async (sourateId: string, embedUrl: string) => {
     if (!user?.id) return;
     setIsUploading(true);
     try {
