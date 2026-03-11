@@ -377,7 +377,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   };
 
   const addYoutubeLinkMutation = useMutation({
-    mutationFn: async ({ dayId, url }: { dayId: number; url: string }) => {
+    mutationFn: async ({ dayId, url }: { dayId: string; url: string }) => {
       const embedUrl = convertYoutubeToEmbed(url);
       if (!embedUrl) throw new Error('Lien YouTube invalide');
       const existingVideos = getVideosForDay(dayId);
