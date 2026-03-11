@@ -459,7 +459,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
             skippedCount++;
             continue;
           }
-          const { error } = await supabase
+          const { error } = await (supabase as any)
             .from('ramadan_quizzes')
             .insert({
               day_id: dayId,
