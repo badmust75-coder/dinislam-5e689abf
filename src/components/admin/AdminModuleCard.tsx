@@ -25,16 +25,22 @@ const AdminModuleCard = ({
   cardBgColor,
   onClick,
   isActive = false,
+  actionButton,
 }: AdminModuleCardProps) => {
   return (
     <div
       className={cn(
-        'cursor-pointer rounded-xl border p-3 transition-all duration-200 hover:shadow-md',
+        'cursor-pointer rounded-xl border p-3 transition-all duration-200 hover:shadow-md relative',
         isActive && 'ring-2 ring-primary',
         cardBgColor
       )}
       onClick={onClick}
     >
+      {actionButton && (
+        <div className="absolute top-1 right-1 z-10" onClick={(e) => e.stopPropagation()}>
+          {actionButton}
+        </div>
+      )}
       <div className="flex flex-col items-center text-center gap-1.5">
         <div className={cn('p-2 rounded-lg', bgColor)}>
           <Icon className={cn('h-5 w-5', color)} />
