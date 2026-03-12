@@ -53,18 +53,6 @@ const AdminNotifications = () => {
     },
   });
 
-  const { data: subscriptionsList, refetch: refetchSubs } = useQuery({
-    queryKey: ['admin-push-subscriptions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('push_subscriptions')
-        .select('user_id, endpoint, p256dh, auth_key, is_active, created_at')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: showSubs,
-  });
 
   const sendNotification = useMutation({
     mutationFn: async () => {
