@@ -27,7 +27,7 @@ import AdminRamadanQuizTracking from '@/components/admin/AdminRamadanQuizTrackin
 import AdminHomework from '@/components/admin/AdminHomework';
 import AdminAttendance from '@/components/admin/AdminAttendance';
 import AdminGlobalStats from '@/components/admin/AdminGlobalStats';
-
+import AdminNotifications from '@/components/admin/AdminNotifications';
 
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -64,7 +64,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   FileText, List, Video, BookOpen, Star, Heart, Bell, Calendar, Image, Music,
 };
 
-type ViewType = 'dashboard' | 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'messages' | 'dynamic-card-content' | 'homework' | 'attendance' | 'modules' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'histoires-prophetes-manage' | 'global-stats';
+type ViewType = 'dashboard' | 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'messages' | 'dynamic-card-content' | 'homework' | 'attendance' | 'modules' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'histoires-prophetes-manage' | 'global-stats' | 'notifications';
 
 interface GenericModuleManageState { moduleId: string; moduleTitle: string; }
 
@@ -494,6 +494,7 @@ const Admin = () => {
   if (currentView === 'homework') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminHomework onBack={handleBack} /></div></AppLayout>;
   if (currentView === 'attendance') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminAttendance onBack={handleBack} /></div></AppLayout>;
   if (currentView === 'global-stats') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminGlobalStats onBack={handleBack} /></div></AppLayout>;
+  if (currentView === 'notifications') return <AppLayout title="Tableau de bord"><div className="p-4"><Button variant="ghost" onClick={handleBack} className="mb-4">← Retour</Button><AdminNotifications /></div></AppLayout>;
   
   if (currentView === 'dynamic-card-content' && selectedDynamicCard) return <AppLayout title="Tableau de bord"><div className="p-4"><AdminDynamicCardContent card={selectedDynamicCard} onBack={handleBack} /></div></AppLayout>;
   if (currentView === 'allah-names-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminAllahNamesManager onBack={handleBack} /></div></AppLayout>;
