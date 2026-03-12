@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Trash2, Check } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { YoutubePlayer, extractYoutubeVideoId } from '@/utils/youtube';
 
 export type ContentType = 'fichier' | 'youtube' | 'audio';
 
