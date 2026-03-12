@@ -1057,7 +1057,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
           const hasQuiz = quizCount > 0;
           const isComplete = hasVideo && hasQuiz;
           const isPartial = hasVideo || hasQuiz;
-          const isGloballyUnlocked = (day as any).is_unlocked;
+          const isGloballyUnlocked = !day.is_locked;
           const hasExceptions = getExceptionsForDay(day.id).length > 0;
 
           const getDayBg = () => {
