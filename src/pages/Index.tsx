@@ -339,6 +339,21 @@ const Index = () => {
                   </button>
 
 
+                  {/* Admin arrow reorder buttons */}
+                  {isAdmin && modules &&
+                  <div className="absolute top-1 left-1 z-20 flex flex-col gap-0.5">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); moveModule(index, 'up'); }}
+                        disabled={index === 0}
+                        className="w-5 h-5 rounded bg-muted hover:bg-muted-foreground/20 disabled:opacity-30 flex items-center justify-center text-[10px] text-foreground"
+                      >▲</button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); moveModule(index, 'down'); }}
+                        disabled={index === (modules?.length ?? 0) - 1}
+                        className="w-5 h-5 rounded bg-muted hover:bg-muted-foreground/20 disabled:opacity-30 flex items-center justify-center text-[10px] text-foreground"
+                      >▼</button>
+                    </div>
+                  }
                   {/* Admin 3-dot menu */}
                   {isAdmin &&
                   <div className="absolute top-2 right-2 z-20">
