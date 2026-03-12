@@ -291,18 +291,10 @@ const Index = () => {
               const Icon = ICON_MAP[mod.icon] || null;
               const slug = getModuleSlug(mod);
               const fallback = MODULE_EMOJI_FALLBACK[slug];
-              const isDragging = draggedModuleId === mod.id;
-              const isDragOver = dragOverModuleId === mod.id && draggedModuleId !== mod.id;
               return (
                 <div
                   key={mod.id}
-                  className={cn("flex flex-col items-center relative", isDragOver && "ring-2 ring-primary ring-offset-2 rounded-2xl")}
-                  draggable={isAdmin}
-                  onDragStart={isAdmin ? (e) => handleModuleDragStart(e, mod.id) : undefined}
-                  onDragOver={isAdmin ? (e) => handleModuleDragOver(e, mod.id) : undefined}
-                  onDragEnd={isAdmin ? handleModuleDragEnd : undefined}
-                  onDrop={isAdmin ? (e) => handleModuleDrop(e, mod.id) : undefined}
-                  style={{ opacity: isDragging ? 0.4 : 1 }}
+                  className="flex flex-col items-center relative"
                 >
                   <button
                     onClick={() => handleModuleClick(mod)}
