@@ -717,12 +717,12 @@ const RamadanDayDialog = ({
                     </div>
                   )}
 
-                  <div className="aspect-video rounded-xl overflow-hidden bg-black">
+                  <div className="w-full rounded-xl overflow-hidden bg-black" style={{ aspectRatio: '16/9' }}>
                     {currentVideo.video_url.includes('youtube.com/embed') ? (
                       <iframe
                         key={currentVideo.id}
-                        src={currentVideo.video_url}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        src={`${currentVideo.video_url}${currentVideo.video_url.includes('?') ? '&' : '?'}rel=0&modestbranding=1&playsinline=1`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                         allowFullScreen
                         className="w-full h-full"
                         style={{ border: 'none' }}
