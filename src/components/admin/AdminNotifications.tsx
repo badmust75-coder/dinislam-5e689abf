@@ -28,9 +28,38 @@ import {
 
 const AdminNotifications = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [notificationTitle, setNotificationTitle] = useState('');
   const [notificationBody, setNotificationBody] = useState('');
   const [notificationType, setNotificationType] = useState<'all' | 'prayer' | 'ramadan'>('all');
+  const [testSending, setTestSending] = useState(false);
+
+  const handleTestAdmin = async () => {
+    if (!user) return;
+    setTestSending(true);
+    try {
+      console.log('Admin user_id:', user.id);
+      const { data, error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          userId: user.id,
+          title: '🔔 Test admin',
+          body: 'Notification test pour l\'admin',
+          tag: 'admin-test',
+        },
+      });
+      if (error) {
+        console.error('Erreur invoke:', error);
+        toast({ title: 'Erreur: ' + error.message, variant: 'destructive' });
+      } else {
+        console.log('Résultat envoi admin:', JSON.stringify(data));
+        toast({ title: `Test envoyé: ${data?.sent ?? 0}/${data?.total ?? 0}` });
+      }
+    } catch (e: any) {
+      toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
+    } finally {
+      setTestSending(false);
+    }
+  };
 
   const { data: subscriptionStats } = useQuery({
     queryKey: ['admin-push-stats'],
