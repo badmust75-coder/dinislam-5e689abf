@@ -166,15 +166,12 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
         .from('user_roles')
         .select('user_id')
         .eq('role', 'admin');
-      addLog('ADMIN_ROLES: ' + JSON.stringify(adminRoles) + ' ERR: ' + JSON.stringify(errRoles));
 
       if (errRoles || !adminRoles?.length) {
-        console.error('Aucun admin trouvé ou erreur:', errRoles);
-        return;
+        return { erreur: 'Aucun admin trouvé', details: errRoles };
       }
 
       const adminIds = adminRoles.map((r: any) => r.user_id);
-      addLog('SENDING_TO_ADMINS: ' + JSON.stringify(adminIds));
 
       const { data, error } = await supabase.functions.invoke(
         'send-push-notification',
@@ -187,9 +184,9 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
           }
         }
       );
-      addLog('PUSH_RESULT: ' + JSON.stringify(data) + ' ERR: ' + JSON.stringify(error));
-    } catch (err) {
-      console.error('NOTIFY_ADMIN_CATCH:', err);
+      return { adminIds, data, error };
+    } catch (err: any) {
+      return { catch: err.message };
     }
   };
 
@@ -202,9 +199,9 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
       });
       if (error) throw error;
       
-      await notifyAdminNewMessage(message.trim());
+      const pushResult = await notifyAdminNewMessage(message.trim());
       
-      toast({ title: 'Message envoyé', description: 'Votre message a été transmis à l\'administrateur' });
+      toast({ title: 'Message envoyé', description: 'Debug push: ' + JSON.stringify(pushResult) });
       setMessage('');
       refetch();
     } catch (error: any) {
