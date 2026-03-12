@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Send, Users, Moon, Clock } from 'lucide-react';
+import { Bell, Send, Users, Moon, Clock, Eye, EyeOff } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -16,12 +16,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 const AdminNotifications = () => {
   const { toast } = useToast();
   const [notificationTitle, setNotificationTitle] = useState('');
   const [notificationBody, setNotificationBody] = useState('');
   const [notificationType, setNotificationType] = useState<'all' | 'prayer' | 'ramadan'>('all');
+  const [showSubs, setShowSubs] = useState(false);
 
   const { data: subscriptionStats } = useQuery({
     queryKey: ['admin-push-stats'],
@@ -45,22 +54,27 @@ const AdminNotifications = () => {
     },
   });
 
+  const { data: subscriptionsList, refetch: refetchSubs } = useQuery({
+    queryKey: ['admin-push-subscriptions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('push_subscriptions')
+        .select('user_id, endpoint, p256dh, auth_key, is_active, created_at')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: showSubs,
+  });
+
   const sendNotification = useMutation({
     mutationFn: async () => {
-      // Get all push subscriptions
-      const { data: subscriptions, error } = await supabase
-        .from('push_subscriptions')
-        .select('endpoint, p256dh, auth, user_id');
-
-      if (error) throw error;
-
-      // Call edge function to send notifications
       const { error: fnError } = await supabase.functions.invoke('send-push-notification', {
         body: {
           title: notificationTitle,
           body: notificationBody,
           type: notificationType,
-          subscriptions,
+          sendToAll: true,
         },
       });
 
@@ -216,6 +230,73 @@ const AdminNotifications = () => {
             </div>
           ))}
         </CardContent>
+      </Card>
+
+      {/* Subscriptions Debug */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Abonnements push</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowSubs(!showSubs);
+                if (!showSubs) refetchSubs();
+              }}
+            >
+              {showSubs ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+              {showSubs ? 'Masquer' : 'Voir les abonnements'}
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        {showSubs && (
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User ID</TableHead>
+                    <TableHead>Actif</TableHead>
+                    <TableHead>p256dh</TableHead>
+                    <TableHead>auth_key</TableHead>
+                    <TableHead>Créé le</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {subscriptionsList?.map((sub, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-mono text-xs">
+                        {sub.user_id?.substring(0, 6)}…
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={sub.is_active ? 'default' : 'destructive'}>
+                          {sub.is_active ? 'Oui' : 'Non'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {sub.p256dh?.substring(0, 10)}…
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {sub.auth_key?.substring(0, 10)}…
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {sub.created_at ? new Date(sub.created_at).toLocaleDateString('fr-FR') : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!subscriptionsList || subscriptionsList.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        Aucun abonnement trouvé
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        )}
       </Card>
     </div>
   );
