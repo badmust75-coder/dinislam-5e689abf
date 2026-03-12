@@ -577,7 +577,7 @@ const RamadanDayDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col p-0 [&>button]:hidden rounded-none sm:rounded-lg">
+      <DialogContent className="max-w-lg w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col p-0 [&>button]:hidden rounded-none sm:rounded-lg overflow-hidden">
         {/* Header with big close button */}
         <div className="p-3 sm:p-4 bg-gradient-to-r from-primary to-royal-dark text-primary-foreground sm:rounded-t-lg relative shrink-0">
           <button
@@ -717,12 +717,12 @@ const RamadanDayDialog = ({
                     </div>
                   )}
 
-                  <div className="aspect-video rounded-xl overflow-hidden bg-black">
+                  <div className="w-full rounded-xl overflow-hidden bg-black" style={{ aspectRatio: '16/9' }}>
                     {currentVideo.video_url.includes('youtube.com/embed') ? (
                       <iframe
                         key={currentVideo.id}
-                        src={currentVideo.video_url}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        src={`${currentVideo.video_url}${currentVideo.video_url.includes('?') ? '&' : '?'}rel=0&modestbranding=1&playsinline=1`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                         allowFullScreen
                         className="w-full h-full"
                         style={{ border: 'none' }}

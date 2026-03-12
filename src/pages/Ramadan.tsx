@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, Play, Moon, Star, Clock } from 'lucide-react';
+import { Check, Play, Moon, Star, Clock, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
@@ -344,11 +344,11 @@ const Ramadan = () => {
         <div className="rounded-2xl p-4 space-y-3 animate-fade-in border bg-card">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-foreground">Votre parcours spirituel</span>
-            <span className="text-sm font-bold text-[#FF9800]">{completedDays}/30 jours</span>
+            <span className="text-sm font-bold text-[#f97316]">{completedDays}/30 jours</span>
           </div>
           <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-[#FF9800] transition-all duration-500"
+              className="h-full rounded-full bg-[#f97316] transition-all duration-500"
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
@@ -363,7 +363,6 @@ const Ramadan = () => {
             const hasProgress = progress && (progress.video_watched || progress.quiz_completed);
             const isLocked = day.is_locked && !dayExceptions.some(e => e.day_id === day.id);
 
-            // 4 states
             type DayState = 'completed' | 'pending' | 'available' | 'locked';
             let state: DayState = 'locked';
             if (isCompleted) {
@@ -375,10 +374,10 @@ const Ramadan = () => {
             }
 
             const stateStyles: Record<DayState, string> = {
-              completed: 'bg-[#4CAF50] text-white shadow-md',
-              pending: 'bg-[#FF9800] text-white shadow-md',
-              available: 'bg-[#FFF8E1] text-[#9E9E9E] border border-[#E0E0E0]',
-              locked: 'bg-[#F5F5F5] text-[#BDBDBD] border border-[#E0E0E0]',
+              completed: 'bg-[#22c55e] text-white shadow-md',
+              pending: 'bg-[#f97316] text-white shadow-md',
+              available: 'bg-[#fef9c3] text-[#9E9E9E] border border-[#E0E0E0]',
+              locked: 'bg-[#f3f4f6] text-[#9ca3af] border border-[#E0E0E0]',
             };
 
             return (
@@ -386,29 +385,29 @@ const Ramadan = () => {
                 key={day.id}
                 onClick={() => handleDayClick(day)}
                 className={cn(
-                  'aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-200 relative',
+                  'min-h-[64px] min-w-[64px] aspect-square rounded-2xl flex flex-col items-center justify-center transition-all duration-200 relative',
                   stateStyles[state],
                   state !== 'locked' && 'hover:scale-105 cursor-pointer'
                 )}
               >
                 {state === 'completed' ? (
-                  <Check className="h-6 w-6 text-white" strokeWidth={3} />
+                  <Check className="h-7 w-7 text-white" strokeWidth={3} />
                 ) : state === 'pending' ? (
                   <>
-                    <span className="absolute top-0.5 right-1 text-[8px] text-white/80">✕</span>
-                    <span className="text-xs leading-none">☽</span>
-                    <span className="text-xs font-bold">{day.day_number}</span>
+                    <span className="absolute top-1 right-1.5 text-[9px] font-bold text-red-200">✕</span>
+                    <span className="text-lg leading-none">☽</span>
+                    <span className="text-[10px] font-bold mt-0.5">{day.day_number}</span>
                   </>
                 ) : state === 'available' ? (
                   <>
-                    <span className="text-xs leading-none text-[#BDBDBD]">☽</span>
-                    <span className="text-xs font-bold">{day.day_number}</span>
+                    <span className="text-lg leading-none text-[#9ca3af]">☽</span>
+                    <span className="text-[10px] font-bold mt-0.5 text-[#78716c]">{day.day_number}</span>
                   </>
                 ) : (
                   <>
-                    <span className="absolute top-0.5 right-1 text-[7px]">🔒</span>
-                    <span className="text-xs leading-none text-[#BDBDBD]">🔒</span>
-                    <span className="text-xs font-bold">{day.day_number}</span>
+                    <span className="absolute top-1 right-1.5 text-[9px] text-[#f97316]">🔒</span>
+                    <Lock className="h-5 w-5 text-[#9ca3af]" />
+                    <span className="text-[10px] font-bold mt-0.5 text-[#9ca3af]">{day.day_number}</span>
                   </>
                 )}
               </button>
@@ -419,19 +418,19 @@ const Ramadan = () => {
         {/* Legend */}
         <div className="flex flex-wrap gap-4 justify-center text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <div className="w-3.5 h-3.5 rounded-full bg-[#4CAF50]" />
+            <div className="w-3.5 h-3.5 rounded-full bg-[#22c55e]" />
             <span>Complété</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3.5 h-3.5 rounded-full bg-[#FF9800]" />
+            <div className="w-3.5 h-3.5 rounded-full bg-[#f97316]" />
             <span>En attente</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3.5 h-3.5 rounded-full bg-[#E0E0E0]" />
+            <div className="w-3.5 h-3.5 rounded-full bg-[#d1d5db]" />
             <span>Verrouillé</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3.5 h-3.5 rounded-full bg-[#FFF8E1] border border-[#E0E0E0]" />
+            <div className="w-3.5 h-3.5 rounded-full bg-[#fef9c3] border border-[#E0E0E0]" />
             <span>Disponible</span>
           </div>
         </div>
