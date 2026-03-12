@@ -1,47 +1,66 @@
 import { useState } from "react";
 import { Check, Lock, Moon } from "lucide-react";
 
-type DayState = "completed" | "current" | "available" | "locked";
+type DayState = "completed" | "current" | "available" | "locked" | "next-locked";
 
-function getDayState(day: any, studentProgress: any[]): DayState {
-  if (day.is_locked) return "locked";
+function getDayState(day: any, studentProgress: any[], allDays: any[]): DayState {
   const progress = studentProgress.find((p: any) => p.day_id === day.id);
+
+  // Completed
   if (progress?.quiz_completed) return "completed";
-  return "current";
+
+  // Unlocked = accessible
+  if (!day.is_locked) return "available";
+
+  // Find max completed day number
+  const completedDayNumbers = studentProgress
+    .filter((p: any) => p.quiz_completed)
+    .map((p: any) => {
+      const d = allDays.find((dd: any) => dd.id === p.day_id);
+      return d?.day_number ?? 0;
+    });
+  const maxCompleted = completedDayNumbers.length > 0 ? Math.max(...completedDayNumbers) : 0;
+
+  // Next day after last completed = patience message
+  if (day.day_number === maxCompleted + 1) return "next-locked";
+
+  // All others = simple lock
+  return "locked";
 }
 
-function DayCell({ day, state, isNextDay, onClick, onNextDayClick }: { day: any; state: DayState; isNextDay: boolean; onClick: () => void; onNextDayClick: () => void }) {
-  const base = "relative flex flex-col items-center justify-center rounded-2xl cursor-pointer select-none";
+function DayCell({ day, state, onClick, onNextDayClick }: { day: any; state: DayState; onClick: () => void; onNextDayClick: () => void }) {
+  const base = "relative flex flex-col items-center justify-center rounded-2xl select-none";
 
   if (state === "completed") return (
-    <div onClick={onClick} className={`${base} w-16 h-16 bg-green-500`}>
+    <div onClick={onClick} className={`${base} w-16 h-16 bg-green-500 cursor-pointer`}>
       <Check strokeWidth={3} className="w-8 h-8 text-white" />
       <span className="text-white text-[11px] font-bold absolute bottom-1">{day.day_number}</span>
     </div>
   );
+
   if (state === "current") return (
-    <div onClick={onClick} className={`${base} w-16 h-16`} style={{ backgroundColor: "#f97316" }}>
+    <div onClick={onClick} className={`${base} w-16 h-16 cursor-pointer`} style={{ backgroundColor: "#f97316" }}>
       <Moon className="w-8 h-8 text-white fill-white" />
       <span className="text-white text-[11px] font-bold absolute bottom-1">{day.day_number}</span>
     </div>
   );
+
   if (state === "available") return (
-    <div onClick={onClick} className={`${base} w-16 h-16 bg-yellow-50 border border-yellow-200`}>
-      <Moon className="w-7 h-7 text-gray-400" />
-      <span className="text-gray-500 text-[11px] font-bold absolute bottom-1">{day.day_number}</span>
+    <div onClick={onClick} className={`${base} w-16 h-16 cursor-pointer`} style={{ backgroundColor: "#f97316" }}>
+      <Moon className="w-8 h-8 text-white fill-white" />
+      <span className="text-white text-[11px] font-bold absolute bottom-1">{day.day_number}</span>
     </div>
   );
 
-  // Locked - next day variant (orange)
-  if (isNextDay) return (
-    <div onClick={onNextDayClick} className={`${base} w-16 h-16`} style={{ backgroundColor: "#f97316" }}>
+  if (state === "next-locked") return (
+    <div onClick={onNextDayClick} className={`${base} w-16 h-16 cursor-pointer`} style={{ backgroundColor: "#f97316" }}>
       <span className="absolute top-0.5 right-0.5 text-[10px]">🔒</span>
       <Lock className="w-5 h-5 text-white" />
       <span className="text-white text-[11px] font-bold absolute bottom-1">{day.day_number}</span>
     </div>
   );
 
-  // Locked default
+  // Locked default - not clickable
   return (
     <div className={`${base} w-16 h-16 cursor-not-allowed`} style={{ backgroundColor: "#fef3c7" }}>
       <span className="absolute top-0.5 right-0.5 text-[10px]">🔒</span>
@@ -58,25 +77,17 @@ export function RamadanCalendarGrid({ days, studentProgress, onDayClick }: {
 }) {
   const [showPatientMessage, setShowPatientMessage] = useState(false);
 
-  // Find the max completed day number
-  const completedDayNumbers = days
-    .filter(d => studentProgress.some(p => p.day_id === d.id && p.quiz_completed))
-    .map(d => d.day_number);
-  const maxCompleted = completedDayNumbers.length > 0 ? Math.max(...completedDayNumbers) : 0;
-
   return (
     <>
       <div className="grid grid-cols-5 gap-2 p-3">
         {days.map(day => {
-          const state = getDayState(day, studentProgress);
-          const isNextDay = state === "locked" && day.day_number === maxCompleted + 1;
+          const state = getDayState(day, studentProgress, days);
           return (
             <DayCell
               key={day.id}
               day={day}
               state={state}
-              isNextDay={isNextDay}
-              onClick={() => !day.is_locked && onDayClick(day)}
+              onClick={() => onDayClick(day)}
               onNextDayClick={() => setShowPatientMessage(true)}
             />
           );

@@ -279,12 +279,6 @@ const Ramadan = () => {
       toast.error('Le calendrier n\'est pas encore ouvert. Patience !');
       return;
     }
-    if (waiting) {
-      toast.info(`Rendez-vous demain à partir de 16h et bsaha ftourek 🌙`, {
-        style: { textAlign: 'center', display: 'flex', justifyContent: 'center' },
-      });
-      return;
-    }
     if (!isUnlocked) {
       toast.error('Complétez d\'abord le quiz du jour précédent');
       return;
