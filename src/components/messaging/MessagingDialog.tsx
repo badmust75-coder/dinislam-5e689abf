@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { sendPushNotification } from '@/lib/pushHelper';
+
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -154,6 +154,53 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
     }
   };
 
+  const notifyAdminNewMessage = async (messageContent: string) => {
+    try {
+      const { data: adminRole, error: adminRoleError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin')
+        .limit(1)
+        .maybeSingle();
+
+      if (adminRoleError) {
+        console.error('Error fetching admin role:', adminRoleError);
+      }
+
+      const { data: adminProfile, error: adminProfileError } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('is_admin', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (adminProfileError) {
+        console.error('Error fetching admin profile:', adminProfileError);
+      }
+
+      const adminId = adminRole?.user_id || adminProfile?.user_id;
+      if (!adminId) {
+        console.warn('No admin user_id found for push notification');
+        return;
+      }
+
+      const { error: pushError } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          userId: adminId,
+          title: 'Nouveau message',
+          body: messageContent.slice(0, 100),
+          url: '/admin?section=messages',
+        },
+      });
+
+      if (pushError) {
+        console.error('Error sending admin push notification:', pushError);
+      }
+    } catch (err) {
+      console.error('Unexpected error while notifying admin:', err);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!message.trim() || !user) return;
     setIsSubmitting(true);
@@ -163,14 +210,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
       });
       if (error) throw error;
       
-      // Send push notification to admin
-      const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', user.id).maybeSingle();
-      const firstName = profile?.full_name?.split(' ')[0] || 'Un élève';
-      sendPushNotification({
-        title: `✉️ Message de ${firstName}`,
-        body: `${firstName} t'a envoyé un message`,
-        type: 'admin',
-      });
+      await notifyAdminNewMessage(message.trim());
       
       toast({ title: 'Message envoyé', description: 'Votre message a été transmis à l\'administrateur' });
       setMessage('');
@@ -202,14 +242,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
       });
       if (error) throw error;
 
-      // Send push notification to admin
-      const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', user.id).maybeSingle();
-      const firstName = profile?.full_name?.split(' ')[0] || 'Un élève';
-      sendPushNotification({
-        title: `✉️ Message de ${firstName}`,
-        body: `${firstName} t'a envoyé un message audio`,
-        type: 'admin',
-      });
+      await notifyAdminNewMessage('🎵 Message audio');
 
       toast({ title: 'Audio envoyé ✓' });
       refetch();
