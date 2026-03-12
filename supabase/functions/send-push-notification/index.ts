@@ -263,9 +263,24 @@ serve(async (req) => {
 
     const { data: subscriptions, error } = await query;
 
+    console.log('QUERY_RESULT', JSON.stringify({
+      error: error?.message,
+      count: subscriptions?.length,
+      subs: subscriptions?.map(s => ({
+        user_id: s.user_id,
+        endpoint_start: s.endpoint?.slice(0, 60),
+        has_p256dh: !!s.p256dh,
+        p256dh_len: s.p256dh?.length,
+        has_auth_key: !!s.auth_key,
+        auth_key_len: s.auth_key?.length,
+        is_active: s.is_active,
+      }))
+    }));
+
     if (error || !subscriptions || subscriptions.length === 0) {
+      console.log('NO_SUBS_FOUND', error?.message || 'empty');
       return new Response(
-        JSON.stringify({ success: true, sent: 0, total: 0 }),
+        JSON.stringify({ success: true, sent: 0, total: 0, reason: error?.message || 'no subscriptions' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -284,13 +299,27 @@ serve(async (req) => {
       requireInteraction: false
     };
 
+    console.log('SENDING_TO', subscriptions.length, 'endpoints, payload title:', title);
+
     const results = await Promise.all(
-      subscriptions.map(sub =>
-        sendPushToEndpoint(
+      subscriptions.map(async (sub, idx) => {
+        console.log(`PRE_SEND_${idx}`, JSON.stringify({
+          user_id: sub.user_id,
+          endpoint: sub.endpoint?.slice(0, 60),
+          p256dh_len: sub.p256dh?.length,
+          auth_key_len: sub.auth_key?.length,
+        }));
+        const result = await sendPushToEndpoint(
           { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth_key },
           payload, vapidPublicKey, vapidPrivateKey
-        )
-      )
+        );
+        console.log(`POST_SEND_${idx}`, JSON.stringify({
+          success: result.success,
+          statusCode: result.statusCode,
+          error: result.error,
+        }));
+        return result;
+      })
     );
 
     // Log all errors for debugging
