@@ -210,14 +210,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
       });
       if (error) throw error;
       
-      // Send push notification to admin
-      const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', user.id).maybeSingle();
-      const firstName = profile?.full_name?.split(' ')[0] || 'Un élève';
-      sendPushNotification({
-        title: `✉️ Message de ${firstName}`,
-        body: `${firstName} t'a envoyé un message`,
-        type: 'admin',
-      });
+      await notifyAdminNewMessage(message.trim());
       
       toast({ title: 'Message envoyé', description: 'Votre message a été transmis à l\'administrateur' });
       setMessage('');
