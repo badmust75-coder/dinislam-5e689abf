@@ -363,7 +363,6 @@ const Ramadan = () => {
             const hasProgress = progress && (progress.video_watched || progress.quiz_completed);
             const isLocked = day.is_locked && !dayExceptions.some(e => e.day_id === day.id);
 
-            // 4 states
             type DayState = 'completed' | 'pending' | 'available' | 'locked';
             let state: DayState = 'locked';
             if (isCompleted) {
@@ -375,10 +374,10 @@ const Ramadan = () => {
             }
 
             const stateStyles: Record<DayState, string> = {
-              completed: 'bg-[#4CAF50] text-white shadow-md',
-              pending: 'bg-[#FF9800] text-white shadow-md',
-              available: 'bg-[#FFF8E1] text-[#9E9E9E] border border-[#E0E0E0]',
-              locked: 'bg-[#F5F5F5] text-[#BDBDBD] border border-[#E0E0E0]',
+              completed: 'bg-[#22c55e] text-white shadow-md',
+              pending: 'bg-[#f97316] text-white shadow-md',
+              available: 'bg-[#fef9c3] text-[#9E9E9E] border border-[#E0E0E0]',
+              locked: 'bg-[#f3f4f6] text-[#9ca3af] border border-[#E0E0E0]',
             };
 
             return (
@@ -386,29 +385,29 @@ const Ramadan = () => {
                 key={day.id}
                 onClick={() => handleDayClick(day)}
                 className={cn(
-                  'aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-200 relative',
+                  'min-h-[64px] min-w-[64px] aspect-square rounded-2xl flex flex-col items-center justify-center transition-all duration-200 relative',
                   stateStyles[state],
                   state !== 'locked' && 'hover:scale-105 cursor-pointer'
                 )}
               >
                 {state === 'completed' ? (
-                  <Check className="h-6 w-6 text-white" strokeWidth={3} />
+                  <Check className="h-7 w-7 text-white" strokeWidth={3} />
                 ) : state === 'pending' ? (
                   <>
-                    <span className="absolute top-0.5 right-1 text-[8px] text-white/80">✕</span>
-                    <span className="text-xs leading-none">☽</span>
-                    <span className="text-xs font-bold">{day.day_number}</span>
+                    <span className="absolute top-1 right-1.5 text-[9px] font-bold text-red-200">✕</span>
+                    <span className="text-lg leading-none">☽</span>
+                    <span className="text-[10px] font-bold mt-0.5">{day.day_number}</span>
                   </>
                 ) : state === 'available' ? (
                   <>
-                    <span className="text-xs leading-none text-[#BDBDBD]">☽</span>
-                    <span className="text-xs font-bold">{day.day_number}</span>
+                    <span className="text-lg leading-none text-[#9ca3af]">☽</span>
+                    <span className="text-[10px] font-bold mt-0.5 text-[#78716c]">{day.day_number}</span>
                   </>
                 ) : (
                   <>
-                    <span className="absolute top-0.5 right-1 text-[7px]">🔒</span>
-                    <span className="text-xs leading-none text-[#BDBDBD]">🔒</span>
-                    <span className="text-xs font-bold">{day.day_number}</span>
+                    <span className="absolute top-1 right-1.5 text-[9px] text-[#f97316]">🔒</span>
+                    <Lock className="h-5 w-5 text-[#9ca3af]" />
+                    <span className="text-[10px] font-bold mt-0.5 text-[#9ca3af]">{day.day_number}</span>
                   </>
                 )}
               </button>
