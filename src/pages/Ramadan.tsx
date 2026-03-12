@@ -327,7 +327,7 @@ const Ramadan = () => {
 
   return (
     <AppLayout>
-      <div className="p-4 space-y-6 max-w-4xl mx-auto">
+      <div className="p-4 space-y-6 max-w-4xl mx-auto" style={{ backgroundColor: "#fffbeb" }}>
         {/* Header */}
         <div className="text-center space-y-3 animate-fade-in">
           <div className="flex items-center justify-center gap-2">
