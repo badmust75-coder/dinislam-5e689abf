@@ -198,6 +198,14 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
         user_id: selectedConversation.user_id, message: replyMessage.trim(), sender_type: 'admin', message_type: 'text',
       });
       if (error) throw error;
+
+      // Push notification to student
+      sendPushNotification({
+        title: '✉️ Nouveau message du professeur',
+        body: replyMessage.trim().substring(0, 100),
+        userId: selectedConversation.user_id,
+      });
+
       setReplyMessage(''); refetchMessages();
     } catch (err: any) { toast({ title: 'Erreur', description: (err?.message || 'Erreur inconnue') + (err?.code ? ` | code: ${err.code}` : ''), variant: 'destructive' }); }
     finally { setIsSending(false); }
