@@ -313,14 +313,6 @@ const Index = () => {
                     </p>
                   </button>
 
-                    {/* Decorative corner */}
-                    <div className="absolute top-0 right-0 w-16 h-16 opacity-5">
-                      <div className={cn(
-                        'absolute inset-0 bg-gradient-to-br rounded-bl-full',
-                        mod.gradient
-                      )} />
-                    </div>
-                  </button>
 
                   {/* Admin 3-dot menu */}
                   {isAdmin &&
