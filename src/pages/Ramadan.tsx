@@ -344,11 +344,11 @@ const Ramadan = () => {
         <div className="rounded-2xl p-4 space-y-3 animate-fade-in border bg-card">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-foreground">Votre parcours spirituel</span>
-            <span className="text-sm font-bold text-[#FF9800]">{completedDays}/30 jours</span>
+            <span className="text-sm font-bold text-[#f97316]">{completedDays}/30 jours</span>
           </div>
           <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-[#FF9800] transition-all duration-500"
+              className="h-full rounded-full bg-[#f97316] transition-all duration-500"
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
