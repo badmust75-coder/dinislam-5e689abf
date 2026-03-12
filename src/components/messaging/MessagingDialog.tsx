@@ -154,6 +154,53 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
     }
   };
 
+  const notifyAdminNewMessage = async (messageContent: string) => {
+    try {
+      const { data: adminRole, error: adminRoleError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin')
+        .limit(1)
+        .maybeSingle();
+
+      if (adminRoleError) {
+        console.error('Error fetching admin role:', adminRoleError);
+      }
+
+      const { data: adminProfile, error: adminProfileError } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('is_admin', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (adminProfileError) {
+        console.error('Error fetching admin profile:', adminProfileError);
+      }
+
+      const adminId = adminRole?.user_id || adminProfile?.user_id;
+      if (!adminId) {
+        console.warn('No admin user_id found for push notification');
+        return;
+      }
+
+      const { error: pushError } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          userId: adminId,
+          title: 'Nouveau message',
+          body: messageContent.slice(0, 100),
+          url: '/admin?section=messages',
+        },
+      });
+
+      if (pushError) {
+        console.error('Error sending admin push notification:', pushError);
+      }
+    } catch (err) {
+      console.error('Unexpected error while notifying admin:', err);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!message.trim() || !user) return;
     setIsSubmitting(true);
