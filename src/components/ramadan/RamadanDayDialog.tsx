@@ -8,6 +8,7 @@ import { Check, ChevronRight, SkipForward, RotateCcw, Pause, Play, Star, Trophy,
 import { cn } from '@/lib/utils';
 import { useConfetti } from '@/hooks/useConfetti';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { YoutubePlayer, extractYoutubeVideoId } from '@/utils/youtube';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
