@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, Moon, Star, Lock } from 'lucide-react';
+import { Moon, Star } from 'lucide-react';
+import RamadanCalendarGrid from '@/components/ramadan/RamadanCalendarGrid';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
