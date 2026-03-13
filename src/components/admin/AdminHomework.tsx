@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Plus, Trash2, CheckCircle, Clock, Mic, Play } from 'lucide-react';
 import { toast } from 'sonner';
+import { sendPushNotification } from '@/lib/pushHelper';
 
 interface AdminHomeworkProps {
   onBack: () => void;
@@ -145,18 +146,25 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     },
   });
 
-  // Mark as corrected
+  // Mark as corrected and notify student
   const markCorrige = useMutation({
-    mutationFn: async (renduId: string) => {
+    mutationFn: async ({ renduId, studentId, devoirTitre }: { renduId: string; studentId: string; devoirTitre: string }) => {
       const { error } = await supabase
         .from('devoirs_rendus')
         .update({ statut: 'corrige' })
         .eq('id', renduId);
       if (error) throw error;
+
+      // Notify student
+      sendPushNotification({
+        userIds: [studentId],
+        title: '🎉 Devoir validé !',
+        body: `Ton devoir "${devoirTitre}" a été corrigé par ton enseignante`,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-devoirs-rendus'] });
-      toast.success('Marqué comme corrigé ✅');
+      toast.success('✅ Devoir corrigé — élève notifié !');
     },
   });
 
@@ -260,27 +268,37 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
         {devoirs.length === 0 && (
           <p className="text-muted-foreground text-sm text-center py-4">Aucun devoir assigné</p>
         )}
-        {devoirs.map((d: any) => (
-          <Card key={d.id} className="mb-2">
-            <CardContent className="p-3 flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-foreground text-sm">{d.titre}</p>
-                <p className="text-xs text-muted-foreground">
-                  {d.assigned_to === 'all' ? '👥 Tous' : d.assigned_to === 'group' ? '👨‍👩‍👧 Groupe' : '👤 Élève'}
-                  {d.date_limite && ` · 📅 ${new Date(d.date_limite).toLocaleDateString('fr-FR')}`}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive"
-                onClick={() => deleteDevoir.mutate(d.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+        {devoirs.map((d: any) => {
+          const badgeCount = rendus.filter((r: any) => r.devoir_id === d.id && r.statut === 'rendu').length;
+          return (
+            <Card key={d.id} className="mb-2 relative">
+              <CardContent className="p-3 flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-foreground text-sm">{d.titre}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {d.assigned_to === 'all' ? '👥 Tous' : d.assigned_to === 'group' ? '👨‍👩‍👧 Groupe' : '👤 Élève'}
+                    {d.date_limite && ` · 📅 ${new Date(d.date_limite).toLocaleDateString('fr-FR')}`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  {badgeCount > 0 && (
+                    <span className="bg-destructive text-destructive-foreground text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                      {badgeCount}
+                    </span>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive"
+                    onClick={() => deleteDevoir.mutate(d.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Rendus to correct */}
@@ -312,7 +330,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
               {r.statut === 'rendu' && (
                 <Button
                   size="sm"
-                  onClick={() => markCorrige.mutate(r.id)}
+                  onClick={() => markCorrige.mutate({ renduId: r.id, studentId: r.student_id, devoirTitre: r.devoir_titre })}
                   disabled={markCorrige.isPending}
                   className="gap-1"
                 >
