@@ -268,27 +268,37 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
         {devoirs.length === 0 && (
           <p className="text-muted-foreground text-sm text-center py-4">Aucun devoir assigné</p>
         )}
-        {devoirs.map((d: any) => (
-          <Card key={d.id} className="mb-2">
-            <CardContent className="p-3 flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-foreground text-sm">{d.titre}</p>
-                <p className="text-xs text-muted-foreground">
-                  {d.assigned_to === 'all' ? '👥 Tous' : d.assigned_to === 'group' ? '👨‍👩‍👧 Groupe' : '👤 Élève'}
-                  {d.date_limite && ` · 📅 ${new Date(d.date_limite).toLocaleDateString('fr-FR')}`}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive"
-                onClick={() => deleteDevoir.mutate(d.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+        {devoirs.map((d: any) => {
+          const badgeCount = rendus.filter((r: any) => r.devoir_id === d.id && r.statut === 'rendu').length;
+          return (
+            <Card key={d.id} className="mb-2 relative">
+              <CardContent className="p-3 flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-foreground text-sm">{d.titre}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {d.assigned_to === 'all' ? '👥 Tous' : d.assigned_to === 'group' ? '👨‍👩‍👧 Groupe' : '👤 Élève'}
+                    {d.date_limite && ` · 📅 ${new Date(d.date_limite).toLocaleDateString('fr-FR')}`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  {badgeCount > 0 && (
+                    <span className="bg-destructive text-destructive-foreground text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                      {badgeCount}
+                    </span>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive"
+                    onClick={() => deleteDevoir.mutate(d.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Rendus to correct */}
