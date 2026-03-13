@@ -157,14 +157,14 @@ const Admin = () => {
     },
   });
 
-  // Fetch pending invocation validation count
-  const { data: pendingInvocationsCount } = useQuery({
-    queryKey: ['admin-pending-invocations-count'],
+  // Fetch pending homework count (devoirs à corriger)
+  const { data: pendingHomeworkCount } = useQuery({
+    queryKey: ['admin-pending-homework-count'],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from('invocation_validation_requests')
+        .from('devoirs_rendus')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+        .eq('statut', 'rendu');
       if (error) throw error;
       return count || 0;
     },
