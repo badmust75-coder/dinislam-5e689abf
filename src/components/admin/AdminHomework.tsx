@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Plus, Trash2, CheckCircle, Clock, Mic, Play } from 'lucide-react';
 import { toast } from 'sonner';
+import { sendPushNotification } from '@/lib/pushHelper';
 
 interface AdminHomeworkProps {
   onBack: () => void;
