@@ -145,18 +145,25 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     },
   });
 
-  // Mark as corrected
+  // Mark as corrected and notify student
   const markCorrige = useMutation({
-    mutationFn: async (renduId: string) => {
+    mutationFn: async ({ renduId, studentId, devoirTitre }: { renduId: string; studentId: string; devoirTitre: string }) => {
       const { error } = await supabase
         .from('devoirs_rendus')
         .update({ statut: 'corrige' })
         .eq('id', renduId);
       if (error) throw error;
+
+      // Notify student
+      sendPushNotification({
+        userIds: [studentId],
+        title: '🎉 Devoir validé !',
+        body: `Ton devoir "${devoirTitre}" a été corrigé par ton enseignante`,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-devoirs-rendus'] });
-      toast.success('Marqué comme corrigé ✅');
+      toast.success('✅ Devoir corrigé — élève notifié !');
     },
   });
 
