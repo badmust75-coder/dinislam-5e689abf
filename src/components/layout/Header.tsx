@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Mail, CalendarCheck, Shield, Check, BarChart3, Trophy, Bell } from 'lucide-react';
+import { Home, Mail, CalendarCheck, Shield, Check, BarChart3, Trophy } from 'lucide-react';
 import UserSettingsDialog from '@/components/settings/UserSettingsDialog';
 import AccountSwitcher from '@/components/auth/AccountSwitcher';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -63,12 +63,6 @@ const Header = ({
             <Button variant="ghost" size="icon" onClick={() => navigate('/attendance')} className="text-primary-foreground hover:bg-primary-foreground/10">
               <CalendarCheck className="h-5 w-5" />
             </Button>
-            {/* Admin: notifications icon */}
-            {isAdmin && (
-              <Button variant="ghost" size="icon" onClick={() => navigate('/admin?section=notifications')} className="text-primary-foreground hover:bg-primary-foreground/10">
-                <Bell className="h-5 w-5" />
-              </Button>
-            )}
             {/* Admin: monitoring icon */}
             {isAdmin && (
               <Button variant="ghost" size="icon" onClick={() => navigate('/monitoring')} className="text-primary-foreground hover:bg-primary-foreground/10 relative">

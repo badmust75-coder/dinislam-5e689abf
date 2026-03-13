@@ -98,8 +98,8 @@ const AdminCommandModal = ({
           <Button variant="outline" onClick={() => { onOpenChange(false); navigate('/admin?section=global-stats'); }} className="w-full">
             📊 Statistiques globales →
           </Button>
-          <Button variant="outline" onClick={() => { onOpenChange(false); navigate('/classement'); }} className="w-full">
-            🏆 Classement →
+          <Button variant="outline" onClick={() => { onOpenChange(false); navigate('/admin?section=notifications'); }} className="w-full">
+            🔔 Gestion des notifications →
           </Button>
         </div>
       </DialogContent>
