@@ -43,9 +43,8 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sourate_validation_requests' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'nourania_validation_requests' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invocation_validation_requests' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_messages' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'homework_assignments' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'devoirs_rendus' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user, isAdmin, queryClient]);
