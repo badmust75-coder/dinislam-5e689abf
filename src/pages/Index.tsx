@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
 import HomeworkCard from '@/components/homework/HomeworkCard';
+import BlocDevoirsEleve from '@/components/homework/BlocDevoirsEleve';
 import WelcomeNameDialog from '@/components/auth/WelcomeNameDialog';
 import { useUserProgress } from '@/hooks/useUserProgress';
 import { cn } from '@/lib/utils';
