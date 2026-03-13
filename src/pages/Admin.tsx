@@ -212,7 +212,7 @@ const Admin = () => {
   useEffect(() => { setPendingCount(pendingValidations || 0); }, [pendingValidations]);
   useEffect(() => { setPendingRegistrations(pendingRegCount || 0); }, [pendingRegCount]);
   useEffect(() => { setPendingNourania(pendingNouraniaCount || 0); }, [pendingNouraniaCount]);
-  useEffect(() => { setPendingInvocations(pendingInvocationsCount || 0); }, [pendingInvocationsCount]);
+  useEffect(() => { setPendingInvocations(pendingHomeworkCount || 0); }, [pendingHomeworkCount]);
 
   // Handle section query param from admin command modal
   useEffect(() => {
