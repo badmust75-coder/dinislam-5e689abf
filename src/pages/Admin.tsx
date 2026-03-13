@@ -547,7 +547,7 @@ const Admin = () => {
             { view: 'registration-validations' as ViewType, count: pendingRegistrations, icon: UserCheck, label: "Validation d'inscription", pendingText: 'Inscription(s) à valider', okText: 'Aucune inscription en attente' },
             { view: 'sourates-validations' as ViewType, count: pendingCount, icon: ClipboardCheck, label: 'Validation Sourates', pendingText: 'Sourate(s) à valider', okText: 'Aucune validation en attente' },
             { view: 'nourania-validations' as ViewType, count: pendingNourania, icon: Sparkles, label: 'Validation Nourania', pendingText: 'Leçon(s) à valider', okText: 'Aucune validation en attente' },
-            { view: 'invocations-validations' as ViewType, count: pendingInvocations, icon: Hand, label: 'Validation Invocations', pendingText: 'Invocation(s) à valider', okText: 'Aucune validation en attente' },
+            { view: 'homework' as ViewType, count: pendingInvocations, icon: ClipboardList, label: 'Devoirs à corriger', pendingText: 'Rendu(s) à corriger', okText: 'Aucun rendu en attente' },
           ].map((item) => {
             const Icon = item.icon;
             const hasPending = item.count > 0;
