@@ -24,7 +24,7 @@ interface MascotAction {
 }
 
 const StarMascot = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { data: progress } = useUserProgress();
@@ -383,7 +383,7 @@ Clique sur n'importe quel module pour commencer !
     }
   }, [isDragging, dragOffset]);
 
-  if (!user) return null;
+  if (!user || isAdmin) return null;
 
   return (
     <>
