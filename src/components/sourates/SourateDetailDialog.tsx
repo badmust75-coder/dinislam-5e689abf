@@ -267,10 +267,13 @@ const SourateDetailDialog = ({
 
       supabase
         .from('sourates')
-        .select('audio_complet_url' as any)
+        .select('audio_complet_url, video_url' as any)
         .eq('id', dbId)
         .single()
-        .then(({ data }) => setAudioCompletUrl((data as any)?.audio_complet_url || null));
+        .then(({ data }) => {
+          setAudioCompletUrl((data as any)?.audio_complet_url || null);
+          setVideoUrl((data as any)?.video_url || null);
+        });
     }
   }, [open, dbId]);
 
