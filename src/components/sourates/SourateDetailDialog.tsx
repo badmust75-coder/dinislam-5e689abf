@@ -318,14 +318,9 @@ const SourateDetailDialog = ({
             <Progress value={versePercentage} className="h-2" />
           </div>
 
-          {/* Audio complet */}
-          {audioCompletUrl && (
-            <div>
-              <p className="text-sm font-semibold text-foreground mb-2">
-                🎵 Écouter la sourate complète
-              </p>
-              <LecteurVerset audioUrl={audioCompletUrl} />
-            </div>
+          {/* Vidéo YouTube */}
+          {videoUrl && (
+            <LecteurVideoSourate videoUrl={videoUrl} />
           )}
 
           {/* Vidéo YouTube */}
