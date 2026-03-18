@@ -408,10 +408,9 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                         <p className="text-xs text-muted-foreground mb-2">
                           {new Date(r.rendu_at).toLocaleDateString('fr-FR')}
                         </p>
-                        {(r.audio_url_fresh || r.audio_url) && (
-                          <audio src={r.audio_url_fresh || r.audio_url} controls preload="metadata"
-                            className="w-full mb-2" style={{ height: '36px' }}
-                            onError={(e) => console.error('Audio error for rendu', r.id, e)} />
+                        {r.audio_url && (
+                          <audio src={r.audio_url} controls preload="metadata"
+                            className="w-full mb-2" style={{ height: '36px' }} />
                         )}
                         {r.commentaire_admin && (
                           <p className="text-xs text-destructive bg-destructive/5 rounded-lg p-2 mb-2">
