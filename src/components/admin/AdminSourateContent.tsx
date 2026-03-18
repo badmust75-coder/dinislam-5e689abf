@@ -134,6 +134,37 @@ const AdminSourateContent = () => {
 
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
 
+  const chargerSourates = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-sourates-list'] });
+  };
+
+  const handleUploadAudioComplet = async (sourateId: string, sourateNumber: number, file: File) => {
+    const fileName = `complet/sourate-${sourateNumber}-${Date.now()}.${file.name.split('.').pop()}`;
+    const { error: uploadError } = await supabase.storage
+      .from('sourates-versets')
+      .upload(fileName, file, { upsert: true });
+    if (uploadError) { toast.error('Erreur: ' + uploadError.message); return; }
+    const { data: urlData } = supabase.storage
+      .from('sourates-versets')
+      .getPublicUrl(fileName);
+    await supabase.from('sourates')
+      .update({ audio_complet_url: urlData.publicUrl, audio_complet_path: fileName } as any)
+      .eq('id', sourateId);
+    toast.success('✅ Audio complet uploadé');
+    chargerSourates();
+  };
+
+  const handleDeleteAudioComplet = async (sourateId: string, filePath: string | null) => {
+    if (filePath) {
+      await supabase.storage.from('sourates-versets').remove([filePath]);
+    }
+    await supabase.from('sourates')
+      .update({ audio_complet_url: null, audio_complet_path: null } as any)
+      .eq('id', sourateId);
+    toast.success('Audio supprimé');
+    chargerSourates();
+  };
+
   const mapContentType = (type: string): ContentType => {
     if (type === 'youtube') return 'youtube';
     if (type === 'audio') return 'audio';
