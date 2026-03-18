@@ -272,10 +272,12 @@ export default function BlocDevoirsEleve() {
   const handleRendu = async (devoirId: string, audioBlob: Blob) => {
     if (!user) return;
 
-    const fileName = `${user.id}/${devoirId}-${Date.now()}.webm`;
+    const mimeType = audioBlob.type || 'audio/webm';
+    const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+    const fileName = `${user.id}/${devoirId}-${Date.now()}.${ext}`;
     const { error: uploadError } = await supabase.storage
       .from('devoirs-audios')
-      .upload(fileName, audioBlob);
+      .upload(fileName, audioBlob, { contentType: mimeType, upsert: true });
 
     if (uploadError) {
       toast.error('Erreur upload: ' + uploadError.message);

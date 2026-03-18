@@ -432,7 +432,14 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                           {new Date(r.rendu_at).toLocaleDateString('fr-FR')}
                         </p>
                         {r.audio_url && (
-                          <PlayerAudioAdmin audioUrl={r.audio_url} />
+                          <div className="mb-2">
+                            <audio
+                              src={r.audio_url}
+                              controls
+                              preload="auto"
+                              style={{ width: '100%', height: '40px', borderRadius: '12px' }}
+                            />
+                          </div>
                         )}
                         {r.commentaire_admin && (
                           <p className="text-xs text-destructive bg-destructive/5 rounded-lg p-2 mb-2">
