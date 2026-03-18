@@ -217,76 +217,21 @@ const AdminSourateContent = () => {
         {sourates.map((sourate) => {
           const sourateContents = contents.filter(c => c.sourate_id === sourate.id);
           return (
-            <Card key={sourate.id}>
-              <CardContent className="p-4 space-y-3">
-                <div>
-                  <p className="font-bold">{sourate.number}. {sourate.name_french}</p>
-                  <p className="text-sm text-muted-foreground font-arabic">{sourate.name_arabic}</p>
-                </div>
-                {/* Audio complet */}
-                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-3 border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
-                    🎵 Audio complet de la sourate
-                  </p>
-                  {(sourate as any).audio_complet_url ? (
-                    <div className="flex items-center gap-2">
-                      <audio src={(sourate as any).audio_complet_url} controls className="flex-1" style={{ height: '32px' }} />
-                      <button
-                        onClick={() => handleDeleteAudioComplet(sourate.id, (sourate as any).audio_complet_path)}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: '#fee2e2' }}
-                      >
-                        <Trash2 className="w-3 h-3 text-red-500" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <input
-                        type="file" accept="audio/*"
-                        className="hidden"
-                        id={`audio-complet-${sourate.id}`}
-                        onChange={e => {
-                          const file = e.target.files?.[0];
-                          if (file) handleUploadAudioComplet(sourate.id, sourate.number, file);
-                          e.target.value = '';
-                        }}
-                      />
-                      <label htmlFor={`audio-complet-${sourate.id}`}
-                        className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-white text-sm font-semibold cursor-pointer"
-                        style={{ backgroundColor: '#3b82f6' }}
-                      >
-                        <Upload className="w-4 h-4" />
-                        Uploader l'audio complet
-                      </label>
-                    </div>
-                  )}
-                </div>
-                {sourateContents.length > 0 && (
-                  <div className="space-y-1.5">
-                    {sourateContents.map((content) => (
-                      <ContentItemCard
-                        key={content.id}
-                        id={content.id}
-                        title={content.file_name}
-                        contentType={mapContentType(content.content_type)}
-                        url={content.file_url}
-                        onDelete={(id) => setDeleteContentId(id)}
-                        onUpdateTitle={(id, title) => updateTitleMutation.mutate({ id, title })}
-                        deleteDisabled={deleteMutation.isPending}
-                      />
-                    ))}
-                  </div>
-                )}
-                {sourateContents.length === 0 && <p className="text-xs text-muted-foreground italic">Aucun contenu</p>}
-                <AdminSourateVersets sourate={sourate} />
-                <ContentUploadTabs
-                  onUploadFile={(file) => uploadToStorage(sourate.id, file, 'fichier')}
-                  onAddYoutubeLink={(url) => handleAddYoutube(sourate.id, url)}
-                  onUploadAudio={(file) => uploadToStorage(sourate.id, file, 'audio')}
-                  isUploading={isUploading}
-                />
-              </CardContent>
-            </Card>
+            <SourateAdminCard
+              key={sourate.id}
+              sourate={sourate}
+              sourateContents={sourateContents}
+              mapContentType={mapContentType}
+              setDeleteContentId={setDeleteContentId}
+              updateTitleMutation={updateTitleMutation}
+              deleteMutation={deleteMutation}
+              uploadToStorage={uploadToStorage}
+              handleAddYoutube={handleAddYoutube}
+              handleUploadAudioComplet={handleUploadAudioComplet}
+              handleDeleteAudioComplet={handleDeleteAudioComplet}
+              chargerSourates={chargerSourates}
+              isUploading={isUploading}
+            />
           );
         })}
       </div>
