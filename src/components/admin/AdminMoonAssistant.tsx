@@ -357,7 +357,7 @@ const AdminMoonAssistant = () => {
           top: pos.y,
           zIndex: 40,
           touchAction: 'none',
-          cursor: 'grab',
+          
           backgroundColor: '#1a1a2e',
           border: '1px solid rgba(255,255,255,0.15)',
         }}

@@ -339,7 +339,7 @@ Clique sur n'importe quel module pour commencer !
           top: pos.y,
           zIndex: 40,
           touchAction: 'none',
-          cursor: 'grab',
+          
         }}
         className="w-10 h-10 rounded-full shadow-md flex items-center justify-center transition-shadow hover:shadow-lg select-none bg-gradient-to-br from-yellow-400 via-yellow-500 to-amber-500"
       >
