@@ -223,6 +223,44 @@ const AdminSourateContent = () => {
                   <p className="font-bold">{sourate.number}. {sourate.name_french}</p>
                   <p className="text-sm text-muted-foreground font-arabic">{sourate.name_arabic}</p>
                 </div>
+                {/* Audio complet */}
+                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-3 border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                    🎵 Audio complet de la sourate
+                  </p>
+                  {(sourate as any).audio_complet_url ? (
+                    <div className="flex items-center gap-2">
+                      <audio src={(sourate as any).audio_complet_url} controls className="flex-1" style={{ height: '32px' }} />
+                      <button
+                        onClick={() => handleDeleteAudioComplet(sourate.id, (sourate as any).audio_complet_path)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{ backgroundColor: '#fee2e2' }}
+                      >
+                        <Trash2 className="w-3 h-3 text-red-500" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        type="file" accept="audio/*"
+                        className="hidden"
+                        id={`audio-complet-${sourate.id}`}
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadAudioComplet(sourate.id, sourate.number, file);
+                          e.target.value = '';
+                        }}
+                      />
+                      <label htmlFor={`audio-complet-${sourate.id}`}
+                        className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-white text-sm font-semibold cursor-pointer"
+                        style={{ backgroundColor: '#3b82f6' }}
+                      >
+                        <Upload className="w-4 h-4" />
+                        Uploader l'audio complet
+                      </label>
+                    </div>
+                  )}
+                </div>
                 {sourateContents.length > 0 && (
                   <div className="space-y-1.5">
                     {sourateContents.map((content) => (
