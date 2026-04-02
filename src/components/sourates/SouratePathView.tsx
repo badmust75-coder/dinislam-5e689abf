@@ -273,13 +273,11 @@ const SouratePathView = ({
 
                 {/* Star content */}
                 <span className={cn(
-                  'absolute inset-0 flex items-center justify-center font-bold leading-none pt-0.5',
-                  isValidated ? 'text-white' : accessible ? 'text-white text-sm' : 'text-gray-400'
+                  'absolute inset-0 flex items-center justify-center font-bold leading-none pt-0.5 text-sm',
+                  isValidated ? 'text-white' : accessible ? 'text-white' : 'text-gray-400'
                 )}>
                   {isValidated ? (
                     <Check className="w-6 h-6" strokeWidth={3} />
-                  ) : !accessible ? (
-                    <Lock className="w-4 h-4" />
                   ) : node.sourate.number === 1000 ? (
                     <span className="text-xs">111b</span>
                   ) : (
