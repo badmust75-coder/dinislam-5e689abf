@@ -79,6 +79,7 @@ Les cartes `students`, `messages`, `attendance`, `homework` dans `ADMIN_ONLY_CAR
 
 ## Déploiement
 
-- **Lovable** est connecté au repo GitHub `badmust75-coder/dinislam-5e689abf` (branche `main`).
-- Le repo original `badmust75-coder/Dinislam` est aussi maintenu à jour (remote `origin`).
-- Pousser vers les deux remotes : `git push origin main && git push lovable main`.
+- **Lovable** est connecté au repo GitHub `badmust75-coder/dinislam-5e689abf` (branche `main`) — push non accessible depuis le compte `Nadelb341`.
+- Le repo principal accessible est `Nadelb341/Dinislam` (remote `origin`).
+- Pousser : `git push origin main` depuis `/Users/nadiaelb/Projets Claude Code/DInislam`.
+- Le repo git local a été initialisé lors de la session du 2026-04-08.
