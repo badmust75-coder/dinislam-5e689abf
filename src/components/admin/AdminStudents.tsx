@@ -1,18 +1,26 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Search, User, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Search, User, MoreVertical, Eye, EyeOff, Save } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import AdminStudentGroups from './AdminStudentGroups';
+import { toast } from 'sonner';
 
 interface StudentProgress {
   sourates: { validated: number; total: number };
@@ -26,6 +34,11 @@ interface StudentProgress {
 const AdminStudents = () => {
   const [search, setSearch] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<{ id: string; email: string; full_name: string | null } | null>(null);
+  const [passwordStudent, setPasswordStudent] = useState<{ id: string; email: string; full_name: string | null; plain_password: string | null } | null>(null);
+  const [showPlainPw, setShowPlainPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const { data: students, isLoading } = useQuery({
     queryKey: ['admin-students'],
@@ -33,7 +46,7 @@ const AdminStudents = () => {
       const [{ data: profiles, error: profilesError }, { data: studentRoles, error: rolesError }] = await Promise.all([
         supabase
           .from('profiles')
-          .select('user_id, email, full_name, created_at')
+          .select('user_id, email, full_name, created_at, plain_password')
           .eq('is_approved', true),
         supabase
           .from('user_roles')
@@ -117,6 +130,31 @@ const AdminStudents = () => {
     s.full_name?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleSavePassword = async () => {
+    if (!passwordStudent || !newPassword || newPassword.length < 6) {
+      toast.error('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke('update-user-password', {
+        body: { user_id: passwordStudent.id, new_password: newPassword },
+      });
+      if (res.error) throw res.error;
+      if (res.data?.error) throw new Error(res.data.error);
+      toast.success('Mot de passe modifié avec succès');
+      setPasswordStudent(null);
+      setNewPassword('');
+      setShowNewPw(false);
+      setShowPlainPw(false);
+    } catch (e: any) {
+      toast.error(e.message || 'Erreur lors de la modification');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -141,10 +179,8 @@ const AdminStudents = () => {
 
   return (
     <div className="space-y-6">
-      {/* Groups section */}
       <AdminStudentGroups />
 
-      {/* Separator */}
       <div className="border-t pt-4">
         <h3 className="text-base font-semibold text-foreground mb-3">📋 Liste des élèves</h3>
       </div>
@@ -161,15 +197,7 @@ const AdminStudents = () => {
 
       <div className="space-y-2">
         {filteredStudents?.map((student) => (
-          <Card
-            key={student.user_id}
-            className="cursor-pointer hover:bg-muted/50 transition-colors"
-            onClick={() => setSelectedStudent({
-              id: student.user_id,
-              email: student.email || '',
-              full_name: student.full_name,
-            })}
-          >
+          <Card key={student.user_id} className="transition-colors">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -182,7 +210,35 @@ const AdminStudents = () => {
                   <p className="text-sm text-muted-foreground">{student.email}</p>
                 </div>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setSelectedStudent({
+                    id: student.user_id,
+                    email: student.email || '',
+                    full_name: student.full_name,
+                  })}>
+                    📊 Voir la progression
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    setPasswordStudent({
+                      id: student.user_id,
+                      email: student.email || '',
+                      full_name: student.full_name,
+                      plain_password: student.plain_password || null,
+                    });
+                    setNewPassword('');
+                    setShowPlainPw(false);
+                    setShowNewPw(false);
+                  }}>
+                    🔑 Modifier le mot de passe
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </CardContent>
           </Card>
         ))}
@@ -194,6 +250,7 @@ const AdminStudents = () => {
         )}
       </div>
 
+      {/* Progress Dialog */}
       <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto" level="nested">
           <DialogHeader>
@@ -277,6 +334,77 @@ const AdminStudents = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Dialog */}
+      <Dialog open={!!passwordStudent} onOpenChange={() => setPasswordStudent(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              🔑 Mot de passe
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              {passwordStudent?.full_name || passwordStudent?.email}
+            </p>
+
+            {/* Current plain password */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-foreground">Mot de passe actuel</label>
+              <div className="relative">
+                <Input
+                  readOnly
+                  type={showPlainPw ? 'text' : 'password'}
+                  value={passwordStudent?.plain_password || '(non enregistré)'}
+                  className="pr-10 bg-muted/50"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full w-10"
+                  onClick={() => setShowPlainPw(!showPlainPw)}
+                >
+                  {showPlainPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* New password */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-foreground">Nouveau mot de passe</label>
+              <div className="relative">
+                <Input
+                  type={showNewPw ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Min. 6 caractères"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full w-10"
+                  onClick={() => setShowNewPw(!showNewPw)}
+                >
+                  {showNewPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <Button
+              onClick={handleSavePassword}
+              disabled={saving || newPassword.length < 6}
+              className="w-full"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {saving ? 'Enregistrement...' : 'Enregistrer'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
