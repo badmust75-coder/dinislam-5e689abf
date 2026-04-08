@@ -352,9 +352,7 @@ const SourateDetailDialog = ({
                   )}
                   {content.content_type === 'youtube' && (
                     <div>
-                      <p className="text-sm font-semibold text-foreground mb-2">
-                        🎬 {content.file_name || 'Vidéo YouTube'}
-                      </p>
+                      <p className="text-sm font-semibold text-foreground mb-2">🎬 {content.file_name || 'Vidéo YouTube'}</p>
                       <LecteurVideoSourate videoUrl={content.file_url} />
                     </div>
                   )}

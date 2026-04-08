@@ -15,46 +15,25 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: getCorsHeaders(req) });
   }
-
   try {
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
-
-    // Vérifier que l'appelant est admin
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const { data: { user: caller } } = await supabaseAdmin.auth.getUser(token);
     if (!caller) throw new Error("Not authenticated");
-
-    const { data: roleData } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", caller.id)
-      .eq("role", "admin")
-      .single();
-
+    const { data: roleData } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", caller.id).eq("role", "admin").single();
     if (!roleData) throw new Error("Not authorized");
-
     const { user_id, new_password } = await req.json();
     if (!user_id || !new_password) throw new Error("Missing user_id or new_password");
     if (new_password.length < 6) throw new Error("Le mot de passe doit contenir au moins 6 caractères");
-
-    // Changer le mot de passe dans Supabase Auth
     const { error } = await supabaseAdmin.auth.admin.updateUserById(user_id, { password: new_password });
     if (error) throw error;
-
-    // Mettre à jour plain_password dans profiles pour que l'admin puisse le voir
     await supabaseAdmin.from("profiles").update({ plain_password: new_password }).eq("user_id", user_id);
-
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ success: true }), { headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
-      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } });
   }
 });
