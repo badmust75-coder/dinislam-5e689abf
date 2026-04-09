@@ -10,6 +10,7 @@ import AdminNotifications from '@/components/admin/AdminNotifications';
 import AdminStudents from '@/components/admin/AdminStudents';
 import AdminAttendance from '@/components/admin/AdminAttendance';
 import AdminRecitationReview from '@/components/admin/AdminRecitationReview';
+import AdminUsersList from '@/components/admin/AdminUsersList';
 
 interface AdminCommandModalProps {
   open: boolean;
@@ -26,17 +27,17 @@ interface AdminCommandModalProps {
 
 const BOUTONS_ACTIONS = [
   { id: 'devoirs', label: 'Devoirs à corriger', section: 'cahier-texte', emoji: '📚' },
+  { id: 'recitations', label: 'Récitations à corriger', section: 'recitations-audio', emoji: '🎙️' },
   { id: 'sourates', label: 'Sourates à valider', section: 'sourates-validations', emoji: '📖' },
   { id: 'nourania', label: 'Nourania à valider', section: 'nourania-validations', emoji: '🔤' },
   { id: 'inscriptions', label: 'Inscriptions', section: 'users', emoji: '📝' },
-  { id: 'recitations', label: 'Récitations à corriger', section: 'recitations-audio', emoji: '🎙️' },
 ];
 
 const BOUTONS_MODULES = [
   { id: 'eleves', label: 'Élèves', section: 'eleves', emoji: '👨‍🎓' },
   { id: 'registre', label: 'Registre', section: 'registre-presence', emoji: '📋' },
   { id: 'cahier', label: 'Cahier de texte', section: 'cahier-texte-module', emoji: '📓' },
-  { id: 'dictionnaire', label: 'Dictionnaire', section: 'dictionnaire', emoji: '📘' },
+  { id: 'utilisateurs', label: 'Utilisateurs', section: 'utilisateurs-list', emoji: '👥' },
 ];
 
 const AdminCommandModal = ({
@@ -291,12 +292,8 @@ function AdminSectionRenderer({
       return <AdminStudents />;
     case 'registre-presence':
       return <AdminAttendance onBack={onClose} />;
-    case 'dictionnaire':
-      return (
-        <p className="text-muted-foreground text-center py-8">
-          Section en cours de développement
-        </p>
-      );
+    case 'utilisateurs-list':
+      return <AdminUsersList onBack={onClose} />;
     default:
       return (
         <p className="text-muted-foreground text-center py-8">
