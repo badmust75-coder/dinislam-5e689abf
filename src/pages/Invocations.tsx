@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Sun, Moon, CloudMoon, Home, Church, Plane, Shirt, Bath, UtensilsCrossed, CloudRain, Heart, BedDouble, Droplets, PawPrint, Activity, Hand, BookOpen, Loader2, Check, Video, FileText, Volume2, Image as ImageIcon, X, Send, Clock, Lock, XCircle } from 'lucide-react';
 import { sendPushNotification } from '@/lib/pushHelper';
+import { useIsOver20 } from '@/hooks/useIsOver20';
 
 // Default icon mapping by title keyword
 const getDefaultIcon = (title: string) => {
@@ -203,6 +204,7 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
 const Invocations = () => {
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
+  const isOver20 = useIsOver20();
   const [selectedInvocation, setSelectedInvocation] = useState<any>(null);
 
   const { data: invocations = [], isLoading } = useQuery({
@@ -314,7 +316,26 @@ const Invocations = () => {
   const requestValidationMutation = useMutation({
     mutationFn: async (invocationId: number) => {
       if (!user) throw new Error('Non connecté');
-      // Delete any previous refused request for this invocation
+
+      if (isOver20) {
+        // Auto-validation pour les +20 ans
+        const existing = progress.find((p: any) => p.invocation_id === invocationId);
+        if (existing) {
+          const { error } = await supabase
+            .from('user_invocation_progress')
+            .update({ is_validated: true })
+            .eq('id', existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('user_invocation_progress')
+            .insert({ user_id: user.id, invocation_id: invocationId, is_memorized: true, is_validated: true });
+          if (error) throw error;
+        }
+        return { autoValidated: true };
+      }
+
+      // Validation par l'admin pour les -20 ans
       await supabase
         .from('invocation_validation_requests')
         .delete()
@@ -325,8 +346,7 @@ const Invocations = () => {
         .from('invocation_validation_requests')
         .insert({ user_id: user.id, invocation_id: invocationId });
       if (error) throw error;
-      
-      // Get user name and invocation name for notification
+
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', user.id).maybeSingle();
       const { data: invoc } = await supabase.from('invocations').select('title_french').eq('id', invocationId).maybeSingle();
       const firstName = profile?.full_name?.split(' ')[0] || 'Un élève';
@@ -336,12 +356,19 @@ const Invocations = () => {
         body: `${firstName} demande la validation de ${invocName}`,
         type: 'admin',
       });
+      return { autoValidated: false };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['user-invocation-progress', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['user-invocation-validation-requests', user?.id] });
-      toast.success('📩 Demande de validation envoyée !');
+      queryClient.invalidateQueries({ queryKey: ['user-progress'] });
+      if (result?.autoValidated) {
+        toast.success('✅ Invocation validée !');
+      } else {
+        toast.success('📩 Demande de validation envoyée !');
+      }
     },
-    onError: () => toast.error('Erreur lors de l\'envoi de la demande'),
+    onError: () => toast.error('Erreur lors de la validation'),
   });
 
   // Build the set of validated invocation IDs for determining unlock state

@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from '@/hooks/useConfetti';
+import { useIsOver20 } from '@/hooks/useIsOver20';
 import SourateUnlockDialog from '@/components/sourates/SourateUnlockDialog';
 import SouratePathView from '@/components/sourates/SouratePathView';
 import SourateDetailDialog from '@/components/sourates/SourateDetailDialog';
@@ -147,6 +148,7 @@ const SouratesPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { fireSuccess, fireConfetti } = useConfetti();
+  const isOver20 = useIsOver20();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSourate, setSelectedSourate] = useState<typeof SOURATES_DATA[0] | null>(null);
@@ -370,33 +372,47 @@ const SouratesPage = () => {
       });
 
       if (allValidated && !sourateProgress.get(sourateDbId)?.is_validated) {
-        // Close dialog and return to path view
         setSelectedSourate(null);
-        
-        // Create a pending validation request for admin (ignore if already pending)
-        await (supabase as any)
-          .from('sourate_validation_requests')
-          .insert({
-            user_id: user.id,
-            sourate_id: sourateDbId,
-            status: 'pending',
+
+        if (isOver20) {
+          // Auto-validation pour les +20 ans — pas besoin de l'admin
+          await supabase
+            .from('user_sourate_progress' as any)
+            .upsert(
+              { user_id: user.id, sourate_id: sourateDbId, is_validated: true, is_memorized: true, progress_percentage: 100 },
+              { onConflict: 'user_id,sourate_id' }
+            );
+          setSourateProgress(prev => {
+            const newMap = new Map(prev);
+            newMap.set(sourateDbId, { is_validated: true, is_memorized: true, progress_percentage: 100 });
+            return newMap;
           });
+          toast({ title: 'بارك الله فيك 🎉', description: 'Sourate validée ! Bonne continuation.' });
+        } else {
+          // Validation par l'admin pour les -20 ans
+          await (supabase as any)
+            .from('sourate_validation_requests')
+            .insert({
+              user_id: user.id,
+              sourate_id: sourateDbId,
+              status: 'pending',
+            });
 
-        // Send push notification to admin
-        const sourateName = selectedSourate ? selectedSourate.name_french : `Sourate inconnue`;
-        supabase.functions.invoke('send-push-notification', {
-          body: {
-            title: '📖 Validation en attente',
-            body: `Un élève a terminé ${sourateName} et attend votre validation.`,
-            type: 'admin',
-            data: { url: '/admin?section=sourates' },
-          },
-        }).catch(err => console.error('Push notification error:', err));
+          const sourateName = selectedSourate ? selectedSourate.name_french : `Sourate inconnue`;
+          supabase.functions.invoke('send-push-notification', {
+            body: {
+              title: '📖 Validation en attente',
+              body: `Un élève a terminé ${sourateName} et attend votre validation.`,
+              type: 'admin',
+              data: { url: '/admin?section=sourates' },
+            },
+          }).catch(err => console.error('Push notification error:', err));
 
-        toast({
-          title: 'بارك الله فيك',
-          description: 'Tous les versets sont cochés ! En attente de validation par l\'enseignant.',
-        });
+          toast({
+            title: 'بارك الله فيك',
+            description: 'Tous les versets sont cochés ! En attente de validation par l\'enseignant.',
+          });
+        }
       }
     } catch (error) {
       console.error('Error updating verse:', error);
