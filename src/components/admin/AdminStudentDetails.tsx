@@ -277,7 +277,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm"><MoreVertical className="h-4 w-4" /></Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="z-[600]">
                   <DropdownMenuItem onClick={() => setSelectedStudent({ id: student.user_id, email: student.email || '', full_name: student.full_name })}>
                     <BookOpen className="h-4 w-4 mr-2" /> Voir la progression
                   </DropdownMenuItem>
