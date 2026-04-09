@@ -9,6 +9,7 @@ import AdminGlobalStats from '@/components/admin/AdminGlobalStats';
 import AdminNotifications from '@/components/admin/AdminNotifications';
 import AdminStudents from '@/components/admin/AdminStudents';
 import AdminAttendance from '@/components/admin/AdminAttendance';
+import AdminRecitationReview from '@/components/admin/AdminRecitationReview';
 
 interface AdminCommandModalProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface AdminCommandModalProps {
   pendingInvocations: number;
   pendingMessages: number;
   pendingHomework: number;
+  pendingRecitations: number;
   total: number;
 }
 
@@ -27,6 +29,7 @@ const BOUTONS_ACTIONS = [
   { id: 'sourates', label: 'Sourates à valider', section: 'sourates-validations', emoji: '📖' },
   { id: 'nourania', label: 'Nourania à valider', section: 'nourania-validations', emoji: '🔤' },
   { id: 'inscriptions', label: 'Inscriptions', section: 'users', emoji: '📝' },
+  { id: 'recitations', label: 'Récitations à corriger', section: 'recitations-audio', emoji: '🎙️' },
 ];
 
 const BOUTONS_MODULES = [
@@ -43,6 +46,7 @@ const AdminCommandModal = ({
   pendingSourates,
   pendingNourania,
   pendingHomework,
+  pendingRecitations,
 }: AdminCommandModalProps) => {
   const navigate = useNavigate();
   const [boutons, setBoutons] = useState(BOUTONS_ACTIONS);
@@ -54,6 +58,7 @@ const AdminCommandModal = ({
     sourates: pendingSourates,
     nourania: pendingNourania,
     devoirs: pendingHomework,
+    recitations: pendingRecitations,
   };
 
   useEffect(() => {
@@ -63,6 +68,9 @@ const AdminCommandModal = ({
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length === BOUTONS_ACTIONS.length) {
           setBoutons(parsed);
+        } else if (Array.isArray(parsed) && parsed.length !== BOUTONS_ACTIONS.length) {
+          // Nouvelle carte ajoutée → reset l'ordre sauvegardé
+          localStorage.removeItem('admin_boutons_order');
         }
       } catch { /* ignore */ }
     }
@@ -261,6 +269,8 @@ function AdminSectionRenderer({
     case 'cahier-texte':
     case 'cahier-texte-module':
       return <AdminHomework onBack={onClose} />;
+    case 'recitations-audio':
+      return <AdminRecitationReview onBack={onClose} />;
     case 'monitoring':
       return (
         <div className="text-center py-8">

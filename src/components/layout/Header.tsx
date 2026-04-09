@@ -126,6 +126,7 @@ const Header = ({
           pendingInvocations={pendingCounts.invocations}
           pendingMessages={pendingCounts.messages}
           pendingHomework={pendingCounts.homework}
+          pendingRecitations={pendingCounts.recitations}
           total={pendingCounts.total}
         />
       )}
