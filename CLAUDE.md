@@ -111,3 +111,11 @@ Les cartes `students`, `messages`, `attendance`, `homework`, `recitations` dans 
 - `vercel.json` à la racine : buildCommand `npm run build`, outputDirectory `dist`, framework `vite`.
 - Lovable (`badmust75-coder/dinislam-5e689abf`) n'est plus utilisé pour le déploiement.
 - Pousser : `git push origin main` depuis `/Users/nadiaelb/Projets Claude Code/DInislam`.
+
+## Règle UX — Confirmation avant suppression
+
+**TOUJOURS** afficher une modale de confirmation avant toute suppression définitive dans l'application.
+- Utiliser `useDeleteConfirm` + `<DeleteConfirmDialog>` (ou un `AlertDialog` équivalent si le composant n'existe pas)
+- Cela s'applique à TOUS les boutons/icônes poubelle, menus "Supprimer", et toute action de suppression irréversible
+- Messages adaptés au contexte : "Supprimer cet élève ?", "Supprimer ce devoir ?", etc.
+- Ne jamais supprimer directement sans confirmation, même pour de petits éléments
