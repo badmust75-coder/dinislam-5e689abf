@@ -1,19 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, Star, Moon, CalendarIcon, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Star, Moon, CalendarIcon, Eye, EyeOff, ChevronDown, X } from 'lucide-react';
+
+const STORAGE_KEY = 'dinislam_saved_accounts';
+
+interface SavedAccount {
+  email: string;
+  password: string;
+}
+
+function getSavedAccounts(): SavedAccount[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAccount(email: string, password: string) {
+  const accounts = getSavedAccounts().filter(a => a.email !== email);
+  accounts.unshift({ email, password });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+}
+
+function removeAccount(email: string) {
+  const accounts = getSavedAccounts().filter(a => a.email !== email);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+}
 
 const Auth = () => {
   const { user, loading: authLoading, signIn, signUp, resetPassword } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+
+  // Remember me
+  const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>([]);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
 
   // Form states
   const [loginEmail, setLoginEmail] = useState('');
@@ -29,6 +62,17 @@ const Auth = () => {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showSignupPasswordConfirm, setShowSignupPasswordConfirm] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+
+  // Charger les comptes mémorisés au démarrage
+  useEffect(() => {
+    const accounts = getSavedAccounts();
+    setSavedAccounts(accounts);
+    if (accounts.length > 0) {
+      setLoginEmail(accounts[0].email);
+      setLoginPassword(accounts[0].password);
+      setRememberMe(true);
+    }
+  }, []);
 
   if (authLoading) {
     return (
@@ -51,12 +95,19 @@ const Auth = () => {
     if (error) {
       toast({
         title: "Erreur de connexion",
-        description: error.message === 'Invalid login credentials' 
+        description: error.message === 'Invalid login credentials'
           ? "Email ou mot de passe incorrect"
           : error.message,
         variant: "destructive",
       });
     } else {
+      if (rememberMe) {
+        saveAccount(loginEmail, loginPassword);
+        setSavedAccounts(getSavedAccounts());
+      } else {
+        removeAccount(loginEmail);
+        setSavedAccounts(getSavedAccounts());
+      }
       toast({
         title: "Bienvenue !",
         description: "Connexion réussie. Bismillah !",
@@ -172,6 +223,31 @@ const Auth = () => {
     setLoading(false);
   };
 
+  const handleSelectSavedAccount = (account: SavedAccount) => {
+    setLoginEmail(account.email);
+    setLoginPassword(account.password);
+    setRememberMe(true);
+    setShowAccountDropdown(false);
+  };
+
+  const handleRemoveSavedAccount = (email: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    removeAccount(email);
+    const updated = getSavedAccounts();
+    setSavedAccounts(updated);
+    if (loginEmail === email) {
+      if (updated.length > 0) {
+        setLoginEmail(updated[0].email);
+        setLoginPassword(updated[0].password);
+      } else {
+        setLoginEmail('');
+        setLoginPassword('');
+        setRememberMe(false);
+      }
+    }
+    setShowAccountDropdown(false);
+  };
+
   const computedAge = signupDob ? calculateAge(signupDob) : null;
 
   return (
@@ -261,6 +337,48 @@ const Auth = () => {
 
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4">
+
+                  {/* Menu déroulant comptes mémorisés */}
+                  {savedAccounts.length > 1 && (
+                    <div className="space-y-2">
+                      <Label>Choisir un compte</Label>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowAccountDropdown(!showAccountDropdown)}
+                          className="w-full flex items-center justify-between px-3 py-2 border rounded-md bg-background text-sm hover:bg-accent transition-colors"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span className="truncate">{loginEmail || 'Sélectionner un compte'}</span>
+                          </span>
+                          <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                        </button>
+                        {showAccountDropdown && (
+                          <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg overflow-hidden">
+                            {savedAccounts.map((account) => (
+                              <div
+                                key={account.email}
+                                className="flex items-center justify-between px-3 py-2 hover:bg-accent cursor-pointer text-sm"
+                                onClick={() => handleSelectSavedAccount(account)}
+                              >
+                                <span className="truncate">{account.email}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleRemoveSavedAccount(account.email, e)}
+                                  className="ml-2 text-muted-foreground hover:text-destructive shrink-0"
+                                  title="Oublier ce compte"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>
                     <div className="relative">
@@ -276,7 +394,7 @@ const Auth = () => {
                       />
                     </div>
                   </div>
-                    <div className="space-y-2">
+                  <div className="space-y-2">
                     <Label htmlFor="login-password">Mot de passe</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -298,6 +416,19 @@ const Auth = () => {
                       </button>
                     </div>
                   </div>
+
+                  {/* Case à cocher Se souvenir de moi */}
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
+                    <Label htmlFor="remember-me" className="text-sm font-normal cursor-pointer">
+                      Se souvenir de moi
+                    </Label>
+                  </div>
+
                   <Button
                     type="button"
                     variant="link"
