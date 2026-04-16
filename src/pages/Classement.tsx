@@ -55,35 +55,21 @@ const Classement = () => {
   const chargerClassement = async () => {
     setLoading(true);
 
-    // Utilise l'Edge Function pour bypasser le RLS et voir tous les élèves
-    let enrichis: ClassementEntry[] = [];
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke('get-ranking', {
-        headers: session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : {},
-      });
-      enrichis = res.data?.classement || [];
-    } catch {
-      // Fallback : requête directe (peut être limitée par RLS)
-      const { data: rankingData } = await supabase
-        .from('student_ranking')
-        .select('user_id, total_points')
-        .order('total_points', { ascending: false })
-        .limit(200);
-      const userIds = (rankingData || []).map(r => r.user_id);
-      let profiles: { user_id: string; full_name: string | null }[] = [];
-      if (userIds.length > 0) {
-        const { data } = await supabase.from('profiles').select('user_id, full_name').in('user_id', userIds).limit(200);
-        profiles = data || [];
-      }
-      enrichis = (rankingData || []).map(r => ({
-        user_id: r.user_id,
-        full_name: profiles.find(p => p.user_id === r.user_id)?.full_name || null,
-        total: r.total_points ?? 0,
+    // Requête directe sur profiles (points + full_name) — contourne le RLS de student_ranking
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('user_id, full_name, points')
+      .eq('is_approved', true)
+      .order('points', { ascending: false })
+      .limit(200);
+
+    const enrichis: ClassementEntry[] = (profilesData || [])
+      .filter(p => (p.points ?? 0) > 0 || p.user_id === user?.id)
+      .map(p => ({
+        user_id: p.user_id,
+        full_name: p.full_name,
+        total: p.points ?? 0,
       }));
-    }
 
     setClassement(enrichis);
 
