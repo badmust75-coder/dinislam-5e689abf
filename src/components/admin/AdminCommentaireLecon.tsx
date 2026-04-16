@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { sendPushNotification } from '@/lib/pushHelper';
 
-const COMMENTAIRE_DEFAULT = "📌 Tu t'es arrêté à :\n✅ Ligne : \n✅ Page : ";
+const COMMENTAIRE_DEFAULT = "📌 Pour le prochain cours, Tu dois réviser :\n✅ Page : \n✅ Ligne n° : ";
 
 interface Props {
   leconId: string;
