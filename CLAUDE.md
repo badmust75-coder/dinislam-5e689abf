@@ -98,6 +98,14 @@ Les cartes `students`, `messages`, `attendance`, `homework`, `recitations` dans 
 - **Politique Storage** : bucket `recitations` public=true. Si les audios ne se lisent pas, relancer : `UPDATE storage.buckets SET public = true WHERE id = 'recitations'; DROP POLICY IF EXISTS "Public read recitations" ON storage.objects; CREATE POLICY "Public read recitations" ON storage.objects FOR SELECT USING (bucket_id = 'recitations');`
 - `useAdminPendingCounts` : inclut maintenant le count `recitations` (status=pending) avec abonnement realtime.
 
+## "Se souvenir de moi" à la connexion (fonctionnalité 2026-04-16)
+
+- Les identifiants (email + mot de passe) sont stockés dans `localStorage` sous la clé `dinislam_saved_accounts` (tableau d'objets `{ email, password }`).
+- Case à cocher "Se souvenir de moi" dans le formulaire de connexion. Si cochée au moment du login réussi → le compte est sauvegardé. Si décochée → le compte est retiré de la liste.
+- Au chargement de la page Auth : si des comptes sont mémorisés, le premier est pré-chargé (email + mot de passe) et la case est cochée.
+- Si plusieurs comptes mémorisés : un menu déroulant apparaît au-dessus du champ email pour choisir. Chaque entrée a un bouton X pour "oublier" ce compte.
+- Fonctions utilitaires dans `Auth.tsx` : `getSavedAccounts`, `saveAccount`, `removeAccount` (pas de fichier séparé, tout dans la page).
+
 ## Mot de passe admin (fonctionnalité 2026-04-08)
 
 - Colonne `plain_password` dans `profiles` pour afficher le mot de passe en clair côté admin (app familiale privée).
