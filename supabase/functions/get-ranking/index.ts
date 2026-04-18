@@ -22,41 +22,82 @@ serve(async (req) => {
   }
 
   try {
-    // Utilise la clé service_role pour bypasser le RLS
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Récupérer le classement complet (bypasse RLS)
-    const { data: rankingData, error: rankingError } = await supabaseAdmin
-      .from('student_ranking')
-      .select('user_id, total_points')
-      .order('total_points', { ascending: false })
+    // Identifier l'appelant
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) throw new Error('Non authentifié');
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: caller } } = await supabaseAdmin.auth.getUser(token);
+    if (!caller) throw new Error('Non authentifié');
+
+    // Vérifier si admin
+    const { data: roleData } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', caller.id)
+      .eq('role', 'admin')
+      .single();
+    const isAdmin = !!roleData;
+
+    // Classement global depuis profiles (bypass RLS grâce à service_role)
+    const { data: profilesData, error: profilesError } = await supabaseAdmin
+      .from('profiles')
+      .select('user_id, full_name, points')
+      .eq('is_approved', true)
+      .order('points', { ascending: false })
       .limit(200);
 
-    if (rankingError) throw rankingError;
+    if (profilesError) throw profilesError;
+    const profiles = profilesData || [];
 
-    const userIds = (rankingData || []).map((r: any) => r.user_id);
-
-    // Récupérer les prénoms
-    let profiles: { user_id: string; full_name: string | null }[] = [];
-    if (userIds.length > 0) {
-      const { data } = await supabaseAdmin
-        .from('profiles')
-        .select('user_id, full_name')
-        .in('user_id', userIds);
-      profiles = data || [];
-    }
-
-    const classement = (rankingData || []).map((r: any) => ({
-      user_id: r.user_id,
-      full_name: profiles.find((p) => p.user_id === r.user_id)?.full_name || null,
-      total: r.total_points ?? 0,
+    // Anonymisation côté serveur : les vrais noms ne sortent jamais pour les élèves
+    const classement = profiles.map((p) => ({
+      user_id: p.user_id === caller.id ? caller.id : null,
+      display_name: isAdmin
+        ? (p.full_name || 'Élève')
+        : (p.user_id === caller.id ? 'Moi' : 'Élève'),
+      total: p.points ?? 0,
+      is_me: p.user_id === caller.id,
     }));
 
+    // Groupes
+    const { data: groupes } = await supabaseAdmin
+      .from('student_groups')
+      .select('id, name, color');
+    const { data: membres } = await supabaseAdmin
+      .from('student_group_members')
+      .select('group_id, user_id');
+
+    const myMembership = (membres || []).find((m: any) => m.user_id === caller.id);
+    const myGroupId = myMembership?.group_id || null;
+
+    const groupMembers: any[] = [];
+    for (const groupe of (groupes || [])) {
+      const membreIds = (membres || [])
+        .filter((m: any) => m.group_id === groupe.id)
+        .map((m: any) => m.user_id);
+      for (const uid of membreIds) {
+        const profile = profiles.find((p) => p.user_id === uid);
+        groupMembers.push({
+          user_id: uid === caller.id ? caller.id : null,
+          display_name: isAdmin
+            ? (profile?.full_name || 'Élève')
+            : (uid === caller.id ? 'Moi' : 'Élève'),
+          total: profile?.points ?? 0,
+          is_me: uid === caller.id,
+          group_id: groupe.id,
+          group_name: groupe.name,
+          group_color: groupe.color,
+        });
+      }
+    }
+
     return new Response(
-      JSON.stringify({ classement }),
+      JSON.stringify({ classement, groupMembers, myGroupId, isAdmin }),
       { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   } catch (err: any) {
