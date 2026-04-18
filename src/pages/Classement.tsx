@@ -16,14 +16,14 @@ interface BaremeItem {
 }
 
 interface ClassementEntry {
-  user_id: string | null;
+  user_id: string;
   display_name: string;
   total: number;
   is_me: boolean;
 }
 
 interface GroupMemberEntry {
-  user_id: string | null;
+  user_id: string;
   display_name: string;
   total: number;
   is_me: boolean;
@@ -58,24 +58,106 @@ const Classement = () => {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session || !user) return;
 
-      const res = await supabase.functions.invoke('get-ranking', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      // Classement global via Edge Function (bypass RLS — retourne tous les élèves)
+      let allProfiles: { user_id: string; full_name: string | null; total: number }[] = [];
+      try {
+        const res = await supabase.functions.invoke('get-ranking', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!res.error && res.data?.classement) {
+          // Nouvelle version de get-ranking (retourne display_name anonymisé)
+          if (res.data.classement[0]?.display_name !== undefined) {
+            setClassement(
+              res.data.classement.map((e: any) => ({
+                user_id: e.user_id || '',
+                display_name: e.display_name,
+                total: e.total,
+                is_me: e.is_me,
+              }))
+            );
+            // Groupes depuis l'Edge Function si disponibles
+            if (res.data.groupMembers) {
+              setGroupMembers(
+                res.data.groupMembers.map((m: any) => ({
+                  user_id: m.user_id || '',
+                  display_name: m.display_name,
+                  total: m.total,
+                  is_me: m.is_me,
+                  group_id: m.group_id,
+                  group_name: m.group_name,
+                  group_color: m.group_color,
+                }))
+              );
+              setMyGroupId(res.data.myGroupId);
+              return;
+            }
+          } else {
+            // Ancienne version de get-ranking (retourne full_name et user_id)
+            allProfiles = res.data.classement.map((e: any) => ({
+              user_id: e.user_id,
+              full_name: e.full_name,
+              total: e.total ?? 0,
+            }));
+          }
+        }
+      } catch (_) { /* fallback vers profiles si Edge Function échoue */ }
 
-      if (res.error) throw res.error;
+      // Fallback : requête directe sur profiles
+      if (allProfiles.length === 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, points')
+          .eq('is_approved', true)
+          .order('points', { ascending: false })
+          .limit(200);
+        allProfiles = (profilesData || []).map(p => ({
+          user_id: p.user_id,
+          full_name: p.full_name,
+          total: p.points ?? 0,
+        }));
+      }
 
-      const payload = res.data as {
-        classement: ClassementEntry[];
-        groupMembers: GroupMemberEntry[];
-        myGroupId: string | null;
-        isAdmin: boolean;
-      };
+      // Anonymisation côté client
+      const enrichis: ClassementEntry[] = allProfiles.map(p => ({
+        user_id: p.user_id,
+        display_name: isAdmin
+          ? (p.full_name || 'Élève')
+          : p.user_id === user.id ? 'Moi' : 'Élève',
+        total: p.total,
+        is_me: p.user_id === user.id,
+      }));
+      setClassement(enrichis);
 
-      setClassement(payload.classement || []);
-      setGroupMembers(payload.groupMembers || []);
-      setMyGroupId(payload.myGroupId);
+      // Groupes — requête directe
+      const { data: groupes } = await supabase.from('student_groups').select('id, name, color');
+      const { data: membres } = await supabase.from('student_group_members').select('group_id, user_id');
+
+      if (groupes && membres) {
+        const myMembership = membres.find(m => m.user_id === user.id);
+        setMyGroupId(myMembership?.group_id || null);
+
+        const memberEntries: GroupMemberEntry[] = [];
+        for (const groupe of groupes) {
+          const membreIds = membres.filter(m => m.group_id === groupe.id).map(m => m.user_id);
+          for (const uid of membreIds) {
+            const rankEntry = allProfiles.find(e => e.user_id === uid);
+            memberEntries.push({
+              user_id: uid,
+              display_name: isAdmin
+                ? (rankEntry?.full_name || 'Élève')
+                : uid === user.id ? 'Moi' : 'Élève',
+              total: rankEntry?.total ?? 0,
+              is_me: uid === user.id,
+              group_id: groupe.id,
+              group_name: groupe.name,
+              group_color: groupe.color,
+            });
+          }
+        }
+        setGroupMembers(memberEntries);
+      }
     } catch (err: any) {
       toast.error('Impossible de charger le classement');
     } finally {
@@ -139,7 +221,7 @@ const Classement = () => {
           <p className="text-sm text-muted-foreground">Qui sera au sommet cette semaine ?</p>
         </div>
 
-        {/* Ma position globale (élève uniquement) */}
+        {/* Ma position globale (élève) */}
         {!isAdmin && myGlobalIndex >= 0 && (
           <div className="rounded-2xl p-4 text-center space-y-1"
             style={{ backgroundColor: 'hsl(48 96% 89%)', border: '2px solid hsl(38 92% 50%)' }}>
@@ -151,7 +233,7 @@ const Classement = () => {
           </div>
         )}
 
-        {/* Ma position dans le groupe (élève uniquement, si dans un groupe) */}
+        {/* Ma position dans le groupe (élève) */}
         {!isAdmin && myGroupId && myRankInGroup >= 0 && (
           <div className="rounded-2xl p-4 text-center space-y-1"
             style={{ backgroundColor: 'hsl(220 70% 96%)', border: '2px solid hsl(220 70% 70%)' }}>
@@ -187,7 +269,6 @@ const Classement = () => {
           </button>
         </div>
 
-        {/* Loading */}
         {loading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -207,7 +288,7 @@ const Classement = () => {
                 const couleurNom = eleve.is_me ? 'hsl(45 93% 42%)' : m.textColor;
                 return (
                   <div
-                    key={index}
+                    key={eleve.user_id || index}
                     className="flex items-center gap-3 p-3 rounded-xl border-2 transition-all"
                     style={{
                       backgroundColor: eleve.is_me ? 'hsl(48 96% 89%)' : m.bg,
@@ -247,7 +328,7 @@ const Classement = () => {
                       {groupe.members.map((m, index) => {
                         const med = getMedaille(index);
                         return (
-                          <div key={index} className="flex items-center gap-3 px-4 py-2"
+                          <div key={m.user_id} className="flex items-center gap-3 px-4 py-2"
                             style={{ backgroundColor: med.bg }}>
                             <span className="text-lg w-6 text-center font-bold">
                               {med.emoji || `${index + 1}.`}
@@ -267,7 +348,7 @@ const Classement = () => {
               </div>
             )
           ) : (
-            /* Élève : son groupe avec anonymisation */
+            /* Élève : son groupe anonymisé */
             myGroupId === null ? (
               <div className="text-center py-8">
                 <p className="text-4xl mb-2">👥</p>
@@ -286,7 +367,7 @@ const Classement = () => {
                   {myGroupMembers.map((membre, index) => {
                     const med = getMedaille(index);
                     return (
-                      <div key={index} className="flex items-center gap-3 px-4 py-2"
+                      <div key={membre.user_id} className="flex items-center gap-3 px-4 py-2"
                         style={{ backgroundColor: membre.is_me ? 'hsl(48 96% 89%)' : med.bg }}>
                         <span className="text-lg w-6 text-center font-bold">
                           {med.emoji || `${index + 1}.`}
