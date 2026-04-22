@@ -104,6 +104,21 @@ Les cartes `students`, `messages`, `attendance`, `homework`, `recitations` dans 
 - Edge Function `update-user-password` : vérifie que l'appelant est admin, appelle `supabaseAdmin.auth.admin.updateUserById` + met à jour `profiles.plain_password`.
 - `AdminStudents.tsx` et `AdminStudentDetails.tsx` : menu 3 points → "Modifier le mot de passe" avec affichage du mot de passe actuel (masqué avec œil) et champ nouveau mot de passe.
 
+## Classement (`src/pages/Classement.tsx`) — mis à jour 2026-04-22
+
+**Règle principale** : un élève voit son propre nom + tous les autres en "Élève" ; l'admin voit tous les noms réels. Anonymisation **data layer** (pas juste UI).
+
+- **Fetch profiles conditionnel** : si `isAdmin` → `supabase.from('profiles').in('user_id', userIds)` (tous les noms). Sinon → `.eq('user_id', user.id)` (seulement le profil du viewer). Les autres lignes affichent `full_name || 'Élève'`, donc "Élève" quand `full_name` est null. Ne jamais élargir ce fetch pour les élèves.
+- **Vue par défaut = Global** pour tous (élèves et admins). Le toggle "🌍 Global" et "👨‍👩‍👧 Par groupes" est visible pour tous.
+- **Vue "Par groupes" côté élève** : affiche uniquement le groupe de l'élève, membres en `Moi` / `Élève`, triés par points. Source : `groupMembers.filter(m => m.group_id === myGroupId)`.
+- **Vue "Par groupes" côté admin** : tous les groupes, tous les membres avec `full_name`.
+- **RLS `student_group_members`** : la policy SELECT autorise un utilisateur à lire les membres des groupes auxquels **il appartient** (admin voit tout). Mise en place via la fonction SECURITY DEFINER `public.is_user_in_group(_group_id, _user_id)` pour contourner la récursion RLS. Migration : `20260422120000_fix_group_members_visibility.sql`. **Ne pas restreindre à nouveau à `auth.uid() = user_id` sinon l'élève ne verra que lui-même.**
+- **RLS `student_ranking`** : lecture publique (tous les authentifiés voient les points), c'est voulu pour que le classement existe.
+
+## Piège `student_groups`
+
+- La table **n'a pas** de colonne `updated_at`. Ne pas la référencer dans les `.update({...})` (erreur PGRST204 : "Could not find the 'updated_at' column..."). Si on veut tracker la dernière modif, ajouter d'abord la colonne via migration.
+
 ## Déploiement
 
 **⚠️ LOVABLE EST L'OUTIL DE PUBLICATION OFFICIEL — PAS VERCEL.**
