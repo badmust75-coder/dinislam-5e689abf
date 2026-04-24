@@ -6,6 +6,13 @@ Ce fichier fournit des instructions à Claude Code (claude.ai/code) pour travail
 
 Dinislam est une application web d'éducation islamique (en français) construite avec React + TypeScript + Vite, utilisant Supabase comme backend. Elle couvre les sourates du Coran (114 + Ayat Al-Kursi), les invocations, la méthode Nourania, l'apprentissage de la prière, les activités du Ramadan, l'alphabet arabe, les noms d'Allah, la grammaire/conjugaison, le vocabulaire, les hadiths, et plus encore. Elle dispose de rôles admin/élève avec un workflow d'approbation (accepter/refuser), un suivi de présence, des devoirs, une messagerie, des notifications push, un classement et un chat mascotte (via Supabase Edge Function).
 
+## 📱 Responsive — téléphone / tablette / ordinateur
+Voir règle complète dans `~/PROJETS CLAUDE CODE/CLAUDE.md`.
+- **Téléphone** (base) : 1 colonne, navigation compacte, texte lisible sur petit écran
+- **Tablette** (`md:` ≥ 768px) : 2 colonnes pour les grilles de sourates/leçons, plus d'espace
+- **Ordinateur** (`lg:` ≥ 1024px) : sidebar fixe, 3+ colonnes, layout spacieux
+- Toute nouvelle page ou composant doit avoir les 3 niveaux testés
+
 ## Commandes
 
 - `npm run dev` — Lancer le serveur de développement (port 8080)
@@ -98,27 +105,37 @@ Les cartes `students`, `messages`, `attendance`, `homework`, `recitations` dans 
 - **Politique Storage** : bucket `recitations` public=true. Si les audios ne se lisent pas, relancer : `UPDATE storage.buckets SET public = true WHERE id = 'recitations'; DROP POLICY IF EXISTS "Public read recitations" ON storage.objects; CREATE POLICY "Public read recitations" ON storage.objects FOR SELECT USING (bucket_id = 'recitations');`
 - `useAdminPendingCounts` : inclut maintenant le count `recitations` (status=pending) avec abonnement realtime.
 
-## "Se souvenir de moi" à la connexion (fonctionnalité 2026-04-16)
-
-- Les identifiants (email + mot de passe) sont stockés dans `localStorage` sous la clé `dinislam_saved_accounts` (tableau d'objets `{ email, password }`).
-- Case à cocher "Se souvenir de moi" dans le formulaire de connexion. Si cochée au moment du login réussi → le compte est sauvegardé. Si décochée → le compte est retiré de la liste.
-- Au chargement de la page Auth : si des comptes sont mémorisés, le premier est pré-chargé (email + mot de passe) et la case est cochée.
-- Si plusieurs comptes mémorisés : un menu déroulant apparaît au-dessus du champ email pour choisir. Chaque entrée a un bouton X pour "oublier" ce compte.
-- Fonctions utilitaires dans `Auth.tsx` : `getSavedAccounts`, `saveAccount`, `removeAccount` (pas de fichier séparé, tout dans la page).
-
 ## Mot de passe admin (fonctionnalité 2026-04-08)
 
 - Colonne `plain_password` dans `profiles` pour afficher le mot de passe en clair côté admin (app familiale privée).
 - Edge Function `update-user-password` : vérifie que l'appelant est admin, appelle `supabaseAdmin.auth.admin.updateUserById` + met à jour `profiles.plain_password`.
 - `AdminStudents.tsx` et `AdminStudentDetails.tsx` : menu 3 points → "Modifier le mot de passe" avec affichage du mot de passe actuel (masqué avec œil) et champ nouveau mot de passe.
 
+## Classement (`src/pages/Classement.tsx`) — mis à jour 2026-04-22
+
+**Règle principale** : un élève voit son propre nom + tous les autres en "Élève" ; l'admin voit tous les noms réels. Anonymisation **data layer** (pas juste UI).
+
+- **Fetch profiles conditionnel** : si `isAdmin` → `supabase.from('profiles').in('user_id', userIds)` (tous les noms). Sinon → `.eq('user_id', user.id)` (seulement le profil du viewer). Les autres lignes affichent `full_name || 'Élève'`, donc "Élève" quand `full_name` est null. Ne jamais élargir ce fetch pour les élèves.
+- **Vue par défaut = Global** pour tous (élèves et admins). Le toggle "🌍 Global" et "👨‍👩‍👧 Par groupes" est visible pour tous.
+- **Vue "Par groupes" côté élève** : affiche uniquement le groupe de l'élève, membres en `Moi` / `Élève`, triés par points. Source : `groupMembers.filter(m => m.group_id === myGroupId)`.
+- **Vue "Par groupes" côté admin** : tous les groupes, tous les membres avec `full_name`.
+- **RLS `student_group_members`** : la policy SELECT autorise un utilisateur à lire les membres des groupes auxquels **il appartient** (admin voit tout). Mise en place via la fonction SECURITY DEFINER `public.is_user_in_group(_group_id, _user_id)` pour contourner la récursion RLS. Migration : `20260422120000_fix_group_members_visibility.sql`. **Ne pas restreindre à nouveau à `auth.uid() = user_id` sinon l'élève ne verra que lui-même.**
+- **RLS `student_ranking`** : lecture publique (tous les authentifiés voient les points), c'est voulu pour que le classement existe.
+
+## Piège `student_groups`
+
+- La table **n'a pas** de colonne `updated_at`. Ne pas la référencer dans les `.update({...})` (erreur PGRST204 : "Could not find the 'updated_at' column..."). Si on veut tracker la dernière modif, ajouter d'abord la colonne via migration.
+
 ## Déploiement
 
-- **Vercel** est connecté au repo GitHub `Nadelb341/Dinislam` (branche `main`) — auto-déploiement à chaque push. URL : https://dinislam-two.vercel.app
-- Projet Vercel : `prj_q8p91lrumcGqfYvx2UlbMcunHENg`, team : `team_ngejdFFfsRKfFVxZZN44MYbD`.
-- `vercel.json` à la racine : buildCommand `npm run build`, outputDirectory `dist`, framework `vite`.
-- Lovable (`badmust75-coder/dinislam-5e689abf`) n'est plus utilisé pour le déploiement.
-- Pousser : `git push origin main` depuis `/Users/nadiaelb/Projets Claude Code/DInislam`.
+**⚠️ LOVABLE EST L'OUTIL DE PUBLICATION OFFICIEL — PAS VERCEL.**
+
+- Les élèves utilisent **uniquement le lien Lovable**. Migrer les élèves vers un autre URL est trop contraignant, donc Lovable reste la source de vérité côté publication.
+- Remote `lovable` → repo GitHub `badmust75-coder/dinislam-5e689abf` (branche `main`) — **c'est ce repo que Lovable surveille**.
+- Remote `origin` → repo GitHub `badmust75-coder/Dinislam` (archive/miroir, à maintenir à jour).
+- **Workflow** : modifs locales → `git push origin main && git push lovable main` → Lovable récupère depuis son repo → Mustapha clique "Publier" dans Lovable.
+- Claude **ne doit jamais** pousser vers Vercel, recréer un projet Vercel, ni proposer de migrer les élèves sur un autre URL sans demande explicite.
+- Le `vercel.json` éventuellement présent et l'URL `dinislam-two.vercel.app` sont des résidus d'une ancienne tentative — ignorer, ne pas s'en servir comme référence.
 
 ## Règle UX — Confirmation avant suppression
 
