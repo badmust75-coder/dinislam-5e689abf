@@ -67,7 +67,7 @@ const ScheduledNotifications = () => {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as ScheduledNotification[];
+      return (data ?? []) as ScheduledNotification[];
     },
   });
 
@@ -210,11 +210,11 @@ const ScheduledNotifications = () => {
         </div>
         {isLoading ? (
           <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin" /></div>
-        ) : notifications.length === 0 ? (
+        ) : (notifications ?? []).length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">Aucune notification programmée</p>
         ) : (
           <div className="space-y-2 max-h-80 overflow-y-auto">
-            {notifications.map(n => {
+            {(notifications ?? []).map(n => {
               const status = getStatus(n);
               const moduleDef = MODULES.find(m => m.value === n.module);
               return (

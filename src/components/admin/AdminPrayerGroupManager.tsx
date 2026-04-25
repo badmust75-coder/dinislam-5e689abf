@@ -80,10 +80,10 @@ const AdminPrayerGroupManager = () => {
       <CardContent>
         <div className="max-h-[400px] overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
           <div className="space-y-2">
-            {students.length === 0 ? (
+            {(students ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">Aucun élève</p>
             ) : (
-              students.map((student) => {
+              (students ?? []).map((student) => {
                 const age = calculateAge(student.date_of_birth);
                 const autoGroup = getAutoGroup(age);
                 const effectiveGroup = student.prayer_group || autoGroup;

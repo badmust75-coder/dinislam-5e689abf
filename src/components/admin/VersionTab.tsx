@@ -28,11 +28,11 @@ const VersionTab = () => {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
   });
 
-  const currentVersion = versions.find((v: any) => v.is_current);
+  const currentVersion = (versions ?? []).find((v: any) => v.is_current);
 
   const createVersion = useMutation({
     mutationFn: async () => {
@@ -198,7 +198,7 @@ const VersionTab = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {versions.map((v: any) => (
+          {(versions ?? []).map((v: any) => (
             <div
               key={v.id}
               className={`rounded-lg border p-3 ${v.is_current ? 'border-primary/50 bg-primary/5' : ''}`}
