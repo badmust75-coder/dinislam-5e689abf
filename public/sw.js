@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dini-bismillah-v15';
+const CACHE_NAME = 'dini-bismillah-v16';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -28,6 +28,9 @@ self.addEventListener('fetch', (e) => {
     url.includes('/auth/v1/') ||
     url.includes('/functions/v1/');
 
+  // Les fichiers audio/média Supabase Storage ne doivent jamais être mis en cache
+  const isStorageRequest = url.includes('/storage/v1/object/');
+
   const isViteDevRequest =
     url.includes('/node_modules/.vite/') ||
     url.includes('/@vite/') ||
@@ -40,7 +43,7 @@ self.addEventListener('fetch', (e) => {
     e.request.destination === 'style' ||
     e.request.destination === 'worker';
 
-  if (isBackendRequest || isViteDevRequest || isScriptOrStyleRequest) {
+  if (isBackendRequest || isStorageRequest || isViteDevRequest || isScriptOrStyleRequest) {
     e.respondWith(fetch(e.request));
     return;
   }
@@ -55,8 +58,11 @@ self.addEventListener('fetch', (e) => {
       (cached) =>
         cached ||
         fetch(e.request).then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          // Ne mettre en cache que les réponses 200 valides
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          }
           return response;
         })
     )
