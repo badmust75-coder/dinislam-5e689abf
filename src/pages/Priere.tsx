@@ -8,6 +8,20 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { usePrayerTimesCity, PRIORITY_CITIES, OTHER_CITIES, CITIES, CityOption } from '@/hooks/usePrayerTimesCity';
+
+const MONTPELLIER: CityOption = { label: 'Montpellier (34)', country: 'FR', lat: 43.61, lon: 3.88 };
+const CITY_STORAGE_KEY = 'dinislam_prayer_city';
+
+function getSavedCity(): CityOption {
+  try {
+    const saved = localStorage.getItem(CITY_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed?.label && typeof parsed.lat === 'number' && typeof parsed.lon === 'number') return parsed;
+    }
+  } catch {}
+  return MONTPELLIER;
+}
 import SunArcDisplay from '@/components/prayer/SunArcDisplay';
 import QiblaCompass from '@/components/prayer/QiblaCompass';
 import PrayerWeeklyCalendar from '@/components/prayer/PrayerWeeklyCalendar';
@@ -23,7 +37,13 @@ const Priere = () => {
   const queryClient = useQueryClient();
   const [showQibla, setShowQibla] = useState(false);
   const [showCitySelector, setShowCitySelector] = useState(false);
-  const [selectedCity, setSelectedCity] = useState<CityOption>(PRIORITY_CITIES[0]);
+  const [selectedCity, setSelectedCity] = useState<CityOption>(getSavedCity);
+
+  const handleSelectCity = (city: CityOption) => {
+    setSelectedCity(city);
+    localStorage.setItem(CITY_STORAGE_KEY, JSON.stringify(city));
+    setShowCitySelector(false);
+  };
 
   const { prayerTimes, loading: prayerLoading, error: prayerError, getNextPrayer } = usePrayerTimesCity(selectedCity);
 
@@ -117,7 +137,7 @@ const Priere = () => {
                   {PRIORITY_CITIES.map((city) => (
                     <button
                       key={city.label}
-                      onClick={() => { setSelectedCity(city); setShowCitySelector(false); }}
+                      onClick={() => handleSelectCity(city)}
                       className={cn(
                         'w-full text-left px-4 py-2.5 text-sm hover:bg-muted/50 transition-colors flex items-center gap-2',
                         selectedCity.label === city.label && 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 font-medium'
@@ -131,7 +151,7 @@ const Priere = () => {
                   {OTHER_CITIES.map((city) => (
                     <button
                       key={city.label}
-                      onClick={() => { setSelectedCity(city); setShowCitySelector(false); }}
+                      onClick={() => handleSelectCity(city)}
                       className={cn(
                         'w-full text-left px-4 py-2.5 text-sm hover:bg-muted/50 transition-colors flex items-center gap-2',
                         selectedCity.label === city.label && 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 font-medium'
