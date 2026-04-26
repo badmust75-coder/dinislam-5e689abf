@@ -286,7 +286,7 @@ const SouratePathView = ({
                   {isValidated ? (
                     <Check className="w-6 h-6" strokeWidth={3} />
                   ) : node.sourate.number === 1000 ? (
-                    <span className="text-xs">111b</span>
+                    <span className="text-xs">2-255</span>
                   ) : (
                     node.sourate.number
                   )}
