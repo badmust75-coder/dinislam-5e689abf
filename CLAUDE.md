@@ -18,7 +18,7 @@ Présents dans **toutes** les zones scrollables.
 - Toutes les pages : via `AppLayout.tsx` (`useWindowScrollToTop`, `position="fixed"`, `bottom-24` pour dépasser la barre de nav)
 - `SourateDetailDialog` : `position="absolute"` dans le dialog
 
-**Règle :** ⬆️ apparaît après 200px de scroll · ⬇️ apparaît quand on est en haut et qu'il reste du contenu en bas.
+**Règle :** `showTop = scrollPos > 200` · `showBottom = !atBottom` (indépendant — les deux flèches s'affichent **simultanément** au milieu de la page)
 
 ## 📦 Pas de débordement de texte hors de son conteneur
 Voir règle complète dans `~/PROJETS CLAUDE CODE/CLAUDE.md`.
@@ -83,14 +83,23 @@ Voir règle complète dans `~/PROJETS CLAUDE CODE/CLAUDE.md`.
 - **Accessibilité séquentielle** : basée sur l'index dans `SOURATES_ORDERED` (pas number+1), pour gérer Ayat Al-Kursi.
 - **Contenu ciblé** : `sourate_content.target_user_id` (nullable) pour envoyer du contenu à un élève spécifique. `viewed_at` pour le suivi de lecture admin.
 
-## Système de validation admin
+## Système de validation admin — màj 2026-04-26
 
 Toutes les validations (inscriptions, sourates, nourania, invocations) disposent de boutons **Accepter** et **Refuser** :
 - **Inscriptions** (`AdminRegistrationValidations`) : accepter = `is_approved=true` + rôle `student` ; refuser = suppression profil.
-- **Sourates** (`AdminSourateValidations`) : accepter = `status='approved'` + progression ; refuser = `status='refused'` + notification push + suppression demande pour retenter.
+- **Sourates** (`AdminSourateValidations`) : accepter = `status='approved'` + progression ; refuser = `status='refused'` + notification push.
 - **Nourania** (`AdminNouraniaValidations`) : idem sourates.
 - **Invocations** (`AdminInvocationValidations`) : idem avec recalcul des points.
+- **Récitations** (`AdminRecitationReview`) : fermeture immédiate du panneau + item retiré du cache avant les opérations async.
 - Côté élève : réception realtime du refus + toast + possibilité de resoumettre.
+
+### Pattern optimistic update (sourates, nourania, récitations)
+Toutes les mutations de validation utilisent des **mises à jour optimistes** pour une réactivité immédiate :
+- `onMutate` : `setProcessingId(req.id)` + annulation des requêtes en cours + suppression immédiate de l'item dans le cache → retourne `{ previous }`
+- `onError` : restauration du cache depuis `context.previous` + toast d'erreur
+- `onSettled` : `setProcessingId(null)`
+- JSX : `disabled={processingId === req.id}` (per-item, pas global `isPending`)
+- Ne **jamais** revenir au pattern `disabled={mutation.isPending}` global (bloque tous les items)
 
 ## Contenu ciblé par élève
 
