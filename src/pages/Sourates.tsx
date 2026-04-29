@@ -11,7 +11,7 @@ import { useIsOver20 } from '@/hooks/useIsOver20';
 import SourateUnlockDialog from '@/components/sourates/SourateUnlockDialog';
 import SouratePathView from '@/components/sourates/SouratePathView';
 import SourateDetailDialog from '@/components/sourates/SourateDetailDialog';
-import { Search, ChevronRight } from 'lucide-react';
+import { Search, ChevronRight, X } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
@@ -544,20 +544,28 @@ const SouratesPage = () => {
 
       {/* Modale Méthodes pour apprendre une sourate */}
       <Dialog open={showMethodsModal} onOpenChange={setShowMethodsModal}>
-        <DialogContent className="max-w-lg p-0 overflow-hidden">
+        <DialogContent className="max-w-lg p-0 overflow-hidden [&>button:last-child]:hidden">
           <div
             ref={methodsScrollRef}
             onScroll={methodsHandleScroll}
             className="max-h-[88vh] overflow-y-auto"
             style={{ backgroundColor: '#fef9ec' }}
           >
-            {/* En-tête */}
-            <div className="p-5 pb-4 sticky top-0 z-10" style={{ backgroundColor: '#fef9ec', borderBottom: '2px solid #f59e0b' }}>
+            {/* En-tête avec bouton fermer rouge */}
+            <div className="p-4 sticky top-0 z-10" style={{ backgroundColor: '#fef9ec', borderBottom: '2px solid #f59e0b' }}>
               <div className="flex items-center gap-3">
-                <span className="text-3xl">📖</span>
-                <div>
-                  <h2 className="font-bold text-lg text-gray-800">Le Saint Coran</h2>
-                  <p className="font-arabic text-sm text-gray-600 mt-0.5" style={{ direction: 'rtl' }}>
+                <button
+                  onClick={() => setShowMethodsModal(false)}
+                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm active:scale-95 transition-transform"
+                  style={{ backgroundColor: '#dc2626' }}
+                  aria-label="Fermer"
+                >
+                  <X className="h-5 w-5 text-white" />
+                </button>
+                <span className="text-2xl">📖</span>
+                <div className="flex-1 min-w-0">
+                  <h2 className="font-bold text-base text-gray-800">Le Saint Coran</h2>
+                  <p className="font-arabic text-xs text-gray-600 mt-0.5" style={{ direction: 'rtl' }}>
                     تعليم القرآن الكريم للأطفال
                   </p>
                 </div>

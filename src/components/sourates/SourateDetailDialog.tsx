@@ -336,15 +336,25 @@ const SourateDetailDialog = ({
     .fallback { text-align: center; color: #666; margin-top: 40px; line-height: 2; }
     .fallback a { color: #f59e0b; }
     .print-btn {
-      position: fixed; top: 16px; right: 16px;
       background: #f59e0b; color: white; border: none; border-radius: 10px;
-      padding: 10px 20px; font-size: 14px; font-weight: bold; cursor: pointer; z-index: 99;
+      padding: 10px 20px; font-size: 14px; font-weight: bold; cursor: pointer;
     }
-    @media print { .print-btn { display: none; } body { padding: 8px; } }
+    .close-btn {
+      background: #dc2626; color: white; border: none; border-radius: 10px;
+      padding: 10px 20px; font-size: 14px; font-weight: bold; cursor: pointer;
+    }
+    .btn-bar {
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 10px; z-index: 99;
+    }
+    @media print { .btn-bar { display: none; } body { padding: 8px; } }
   </style>
 </head>
 <body>
-  <button class="print-btn" onclick="window.print()">🖨️ Imprimer / Enregistrer PDF</button>
+  <div class="btn-bar">
+    <button class="close-btn" onclick="window.close()">✕ Fermer</button>
+    <button class="print-btn" onclick="window.print()">🖨️ Imprimer / PDF</button>
+  </div>
   <div class="header">
     <div class="ar">${sourate.name_arabic}</div>
     <div class="fr">${sourate.name_french}</div>
