@@ -4,7 +4,7 @@ import { getCdnAudioUrl } from './cdnAudio';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Check, BookOpen, FileText, File } from 'lucide-react';
+import { Check, BookOpen, FileText, File, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuranVerses } from '@/hooks/useQuranVerses';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -298,6 +298,64 @@ const SourateDetailDialog = ({
   }
   const versePercentage = Math.round((validatedVerses / sourate.verses_count) * 100);
 
+  const handlePrintSourate = () => {
+    const sourateVerses = NPM_VERSETS[sourate.number];
+    const sourateNum = sourate.number === 1000 ? '2-255' : sourate.number;
+
+    let content = '';
+    if (sourateVerses) {
+      content = sourateVerses
+        .flatMap(({ parts }) => parts.map(p => `<img src="${p.imageUrl}" />`))
+        .join('\n');
+    } else {
+      content = `<p class="fallback">Cette sourate n'est pas encore disponible en format image.<br/>
+        <a href="https://www.coran-en-ligne.com/coran-en-arabe.html" target="_blank">
+          Télécharger sur Coran en Ligne →
+        </a></p>`;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=820,height=920');
+    if (!printWindow) {
+      toast.error('Popups bloquées — autorisez les popups pour cette page.');
+      return;
+    }
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>${sourate.name_arabic} — ${sourate.name_french}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #fff; padding: 24px; max-width: 750px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #f59e0b; }
+    .ar { font-size: 30px; direction: rtl; font-family: 'Traditional Arabic', 'Amiri', serif; margin-bottom: 6px; }
+    .fr { font-size: 15px; color: #555; margin-bottom: 4px; }
+    .info { font-size: 12px; color: #999; }
+    img { width: 100%; display: block; margin: 3px auto; }
+    .fallback { text-align: center; color: #666; margin-top: 40px; line-height: 2; }
+    .fallback a { color: #f59e0b; }
+    .print-btn {
+      position: fixed; top: 16px; right: 16px;
+      background: #f59e0b; color: white; border: none; border-radius: 10px;
+      padding: 10px 20px; font-size: 14px; font-weight: bold; cursor: pointer; z-index: 99;
+    }
+    @media print { .print-btn { display: none; } body { padding: 8px; } }
+  </style>
+</head>
+<body>
+  <button class="print-btn" onclick="window.print()">🖨️ Imprimer / Enregistrer PDF</button>
+  <div class="header">
+    <div class="ar">${sourate.name_arabic}</div>
+    <div class="fr">${sourate.name_french}</div>
+    <div class="info">Sourate n°${sourateNum} · ${sourate.verses_count} versets · ${sourate.revelation_type}</div>
+  </div>
+  ${content}
+</body>
+</html>`);
+    printWindow.document.close();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-0 overflow-hidden">
@@ -334,6 +392,25 @@ const SourateDetailDialog = ({
           {dbId && (
             <SourateRecitationPanel sourateId={dbId} sourateName={sourate.name_french} />
           )}
+
+          {/* Carte Ma sourate en PDF */}
+          <div className="rounded-xl p-4 border" style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
+            <p className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: '#15803d' }}>
+              <Printer className="h-4 w-4" />
+              Ma sourate en PDF
+            </p>
+            <button
+              onClick={handlePrintSourate}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white active:scale-95 transition-transform"
+              style={{ backgroundColor: '#16a34a' }}
+            >
+              <Printer className="h-4 w-4" />
+              Télécharger / Imprimer
+            </button>
+            <p className="text-xs mt-2" style={{ color: '#166534' }}>
+              Une fenêtre s'ouvre → choisir "Enregistrer en PDF" ou "Imprimer"
+            </p>
+          </div>
 
           {/* Vidéo YouTube */}
           {videoUrl && (
