@@ -10,6 +10,9 @@ import { toast } from 'sonner';
 import { Sun, Moon, CloudMoon, Home, Church, Plane, Shirt, Bath, UtensilsCrossed, CloudRain, Heart, BedDouble, Droplets, PawPrint, Activity, Hand, BookOpen, Loader2, Check, Video, FileText, Volume2, Image as ImageIcon, X, Send, Clock, Lock, XCircle } from 'lucide-react';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { useIsOver20 } from '@/hooks/useIsOver20';
+import { getInvocationEnrichment } from '@/data/invocationsData';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
+import { ScrollButtons } from '@/components/ui/ScrollButtons';
 
 // Default icon mapping by title keyword
 const getDefaultIcon = (title: string) => {
@@ -68,134 +71,183 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
   const isMemorized = progress?.is_memorized ?? false;
   const isValidated = progress?.is_validated ?? false;
   const isRefused = validationRequest?.status === 'refused';
+  const enrichment = getInvocationEnrichment(invocation.title_french);
+  const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } = useScrollToTop();
 
-  const getContentIcon = (type: string) => {
-    switch (type) {
-      case 'video': return <Video className="h-4 w-4" />;
-      case 'pdf': return <FileText className="h-4 w-4" />;
-      case 'audio': return <Volume2 className="h-4 w-4" />;
-      case 'image': return <ImageIcon className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
-    }
-  };
+  const arabicText = invocation.content_arabic || enrichment?.arabic || '';
+  const frenchText = invocation.content_french || enrichment?.translation || '';
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span>{invocation.title_french}</span>
-            {invocation.category && (
-              <Badge className={`${getCategoryColor(invocation.category)} text-white text-xs`}>
-                {getCategoryLabel(invocation.category)}
-              </Badge>
+      <DialogContent className="max-w-lg p-0 overflow-hidden">
+        <div ref={scrollRef} onScroll={handleScroll} className="max-h-[88vh] overflow-y-auto">
+
+          {/* En-tête */}
+          <div className="px-5 pt-5 pb-4 border-b border-border">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <h2 className="font-bold text-base text-foreground leading-snug">{invocation.title_french}</h2>
+                {invocation.title_arabic && (
+                  <p className="font-arabic text-lg text-right text-muted-foreground mt-1">{invocation.title_arabic}</p>
+                )}
+              </div>
+              {invocation.category && (
+                <Badge className={`${getCategoryColor(invocation.category)} text-white text-xs flex-shrink-0`}>
+                  {getCategoryLabel(invocation.category)}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="p-5 space-y-4 pb-8">
+
+            {/* Texte arabe */}
+            {arabicText ? (
+              <div className="rounded-2xl p-4 text-right" style={{ background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)' }}>
+                <p className="font-arabic leading-loose text-white" style={{ fontSize: '22px', lineHeight: '2.2' }}>
+                  {arabicText}
+                </p>
+              </div>
+            ) : null}
+
+            {/* Translittération */}
+            {enrichment?.transliteration && (
+              <div className="px-1">
+                <p className="text-xs font-semibold text-teal-600 dark:text-teal-400 uppercase tracking-wider mb-1">
+                  Prononciation
+                </p>
+                <p className="text-sm italic text-teal-700 dark:text-teal-300 leading-relaxed">
+                  {enrichment.transliteration}
+                </p>
+              </div>
             )}
-          </DialogTitle>
-          {invocation.title_arabic && (
-            <p className="font-arabic text-xl text-right text-muted-foreground">{invocation.title_arabic}</p>
-          )}
-        </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Arabic content */}
-          {invocation.content_arabic && (
-            <div className="bg-muted/30 rounded-xl p-4 text-right">
-              <p className="font-arabic text-xl leading-loose text-foreground">{invocation.content_arabic}</p>
-            </div>
-          )}
+            {/* Traduction */}
+            {frenchText ? (
+              <div className="rounded-xl p-4 border" style={{ backgroundColor: '#fef9ec', borderColor: '#fde68a' }}>
+                <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-2">Traduction</p>
+                <p className="text-sm text-gray-700 leading-relaxed italic">« {frenchText} »</p>
+              </div>
+            ) : null}
 
-          {/* French content */}
-          {invocation.content_french && (
-            <div className="bg-muted/30 rounded-xl p-4">
-              <p className="text-sm text-muted-foreground italic">{invocation.content_french}</p>
-            </div>
-          )}
-
-          {/* Media contents */}
-          {contents.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Ressources</h4>
-              {contents.map((content) => (
-                <div key={content.id} className="border border-border rounded-xl overflow-hidden">
-                  {content.content_type === 'video' && (
-                    <div className="aspect-video">
-                      <video src={content.file_url} controls preload="none" className="w-full h-full" controlsList="nodownload" />
-                    </div>
-                  )}
-                  {content.content_type === 'image' && (
-                    <img src={content.file_url} alt={content.file_name} className="w-full h-auto object-contain" loading="lazy" />
-                  )}
-                  {(content.content_type === 'pdf' || content.content_type === 'document') && (
-                    <a href={content.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors">
-                      <FileText className="h-5 w-5 text-red-500" />
-                      <span className="text-sm font-medium">{content.file_name}</span>
-                    </a>
-                  )}
-                  {content.content_type === 'audio' && (
-                    <div className="p-3 flex items-center gap-3">
-                      <Volume2 className="h-5 w-5 text-primary" />
-                      <audio src={content.file_url} controls className="flex-1 h-8" />
-                    </div>
-                  )}
-                  {!['video', 'image', 'pdf', 'document', 'audio'].includes(content.content_type) && (
-                    <a href={content.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors">
-                      {getContentIcon(content.content_type)}
-                      <span className="text-sm">{content.file_name}</span>
-                    </a>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {contents.length === 0 && !invocation.content_arabic && !invocation.content_french && (
-            <p className="text-center text-muted-foreground text-sm py-4">Aucun contenu disponible pour le moment.</p>
-          )}
-
-          {/* Memorized button */}
-          <Button
-            className="w-full gap-2"
-            variant={isMemorized ? 'outline' : 'default'}
-            onClick={() => onMarkMemorized(invocation.id, !isMemorized)}
-          >
-            {isMemorized ? (
-              <><Check className="h-4 w-4 text-green-500" /> Mémorisé ✅</>
-            ) : (
-              <><Hand className="h-4 w-4" /> Marquer comme mémorisé</>
+            {/* Vertu */}
+            {enrichment?.virtue && (
+              <div className="rounded-xl p-4 border" style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
+                <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  ✨ Vertu
+                </p>
+                <p className="text-sm text-green-800 leading-relaxed">{enrichment.virtue}</p>
+              </div>
             )}
-          </Button>
 
-          {/* Refused indicator */}
-          {isRefused && !isValidated && (
-            <div className="flex items-center justify-center gap-2 py-2 text-destructive font-medium text-sm">
-              <XCircle className="h-5 w-5" />
-              Refusé — réessayez
-            </div>
-          )}
+            {/* Info complémentaire (ex: si on oublie) */}
+            {enrichment?.extra && (
+              <div className="rounded-xl p-4 border" style={{ backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }}>
+                <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  💡 À savoir
+                </p>
+                <p className="text-sm text-blue-800 leading-relaxed">{enrichment.extra}</p>
+              </div>
+            )}
 
-          {/* Validation request button */}
-          {isValidated ? (
-            <div className="flex items-center justify-center gap-2 py-2 text-green-600 dark:text-green-400 font-medium">
-              <Check className="h-5 w-5" />
-              Validé par l'enseignant ✅
-            </div>
-          ) : validationRequest?.status === 'pending' ? (
-            <div className="flex items-center justify-center gap-2 py-2 text-amber-600 dark:text-amber-400 font-medium">
-              <Clock className="h-5 w-5" />
-              Validation en attente...
-            </div>
-          ) : (
+            {/* Source */}
+            {enrichment?.source && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5 px-1">
+                <BookOpen className="h-3 w-3 flex-shrink-0" />
+                <span>{enrichment.source}</span>
+              </p>
+            )}
+
+            {/* Médias ajoutés par l'admin */}
+            {contents.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Ressources</h4>
+                {contents.map((content) => (
+                  <div key={content.id} className="border border-border rounded-xl overflow-hidden">
+                    {content.content_type === 'video' && (
+                      <div className="aspect-video">
+                        <video src={content.file_url} controls preload="none" className="w-full h-full" controlsList="nodownload" />
+                      </div>
+                    )}
+                    {content.content_type === 'image' && (
+                      <img src={content.file_url} alt={content.file_name} className="w-full h-auto object-contain" loading="lazy" />
+                    )}
+                    {(content.content_type === 'pdf' || content.content_type === 'document') && (
+                      <a href={content.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors">
+                        <FileText className="h-5 w-5 text-red-500" />
+                        <span className="text-sm font-medium">{content.file_name}</span>
+                      </a>
+                    )}
+                    {content.content_type === 'audio' && (
+                      <div className="p-3 flex items-center gap-3">
+                        <Volume2 className="h-5 w-5 text-primary" />
+                        <audio src={content.file_url} controls className="flex-1 h-8" />
+                      </div>
+                    )}
+                    {!['video', 'image', 'pdf', 'document', 'audio'].includes(content.content_type) && (
+                      <a href={content.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors">
+                        <FileText className="h-4 w-4" />
+                        <span className="text-sm">{content.file_name}</span>
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Bouton mémorisé */}
             <Button
               className="w-full gap-2"
-              variant="outline"
-              onClick={() => onRequestValidation(invocation.id)}
-              disabled={isRequestingValidation}
+              variant={isMemorized ? 'outline' : 'default'}
+              onClick={() => onMarkMemorized(invocation.id, !isMemorized)}
             >
-              <Send className="h-4 w-4" />
-              Demander la validation
+              {isMemorized ? (
+                <><Check className="h-4 w-4 text-green-500" /> Mémorisée ✅</>
+              ) : (
+                <><Hand className="h-4 w-4" /> Marquer comme mémorisée</>
+              )}
             </Button>
-          )}
+
+            {/* Refusé */}
+            {isRefused && !isValidated && (
+              <div className="flex items-center justify-center gap-2 py-2 text-destructive font-medium text-sm">
+                <XCircle className="h-5 w-5" />
+                Refusée — réessayez
+              </div>
+            )}
+
+            {/* Bouton validation */}
+            {isValidated ? (
+              <div className="flex items-center justify-center gap-2 py-2 text-green-600 dark:text-green-400 font-medium">
+                <Check className="h-5 w-5" />
+                Validée par l'enseignant ✅
+              </div>
+            ) : validationRequest?.status === 'pending' ? (
+              <div className="flex items-center justify-center gap-2 py-2 text-amber-600 dark:text-amber-400 font-medium">
+                <Clock className="h-5 w-5" />
+                Validation en attente...
+              </div>
+            ) : (
+              <Button
+                className="w-full gap-2"
+                variant="outline"
+                onClick={() => onRequestValidation(invocation.id)}
+                disabled={isRequestingValidation}
+              >
+                <Send className="h-4 w-4" />
+                Demander la validation
+              </Button>
+            )}
+          </div>
         </div>
+
+        <ScrollButtons
+          showTop={showTop}
+          showBottom={showBottom}
+          onScrollTop={scrollToTop}
+          onScrollBottom={scrollToBottom}
+          position="absolute"
+        />
       </DialogContent>
     </Dialog>
   );
