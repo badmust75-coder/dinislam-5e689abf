@@ -11,7 +11,10 @@ import { useIsOver20 } from '@/hooks/useIsOver20';
 import SourateUnlockDialog from '@/components/sourates/SourateUnlockDialog';
 import SouratePathView from '@/components/sourates/SouratePathView';
 import SourateDetailDialog from '@/components/sourates/SourateDetailDialog';
-import { Search } from 'lucide-react';
+import { Search, ChevronRight } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
+import { ScrollButtons } from '@/components/ui/ScrollButtons';
 
 // Complete list of 114 Surahs
 const SOURATES_DATA = [
@@ -151,6 +154,8 @@ const SouratesPage = () => {
   const isOver20 = useIsOver20();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMethodsModal, setShowMethodsModal] = useState(false);
+  const { scrollRef: methodsScrollRef, handleScroll: methodsHandleScroll, showTop: methodsShowTop, showBottom: methodsShowBottom, scrollToTop: methodsScrollToTop, scrollToBottom: methodsScrollToBottom } = useScrollToTop();
   const [selectedSourate, setSelectedSourate] = useState<typeof SOURATES_DATA[0] | null>(null);
   const [sourateProgress, setSourateProgress] = useState<Map<string, { is_validated: boolean; is_memorized: boolean; progress_percentage: number }>>(new Map());
   const [verseProgress, setVerseProgress] = useState<Map<string, boolean>>(new Map());
@@ -476,6 +481,24 @@ const SouratesPage = () => {
           />
         </div>
 
+        {/* Carte Méthodes pour apprendre une sourate */}
+        <button
+          onClick={() => setShowMethodsModal(true)}
+          className="w-full rounded-2xl p-4 border text-left active:scale-95 transition-transform flex items-center gap-3"
+          style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}
+        >
+          <span className="text-2xl flex-shrink-0">📚</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm" style={{ color: '#991b1b' }}>
+              Méthodes pour apprendre une sourate
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: '#dc2626' }}>
+              8 étapes pour bien mémoriser · Appuie pour lire
+            </p>
+          </div>
+          <ChevronRight className="h-4 w-4 flex-shrink-0" style={{ color: '#dc2626' }} />
+        </button>
+
         {/* Serpentine Path */}
         {loading ? (
           <div className="space-y-4">
@@ -518,6 +541,62 @@ const SouratesPage = () => {
         }}
         sourateName={unlockDialog.sourateName}
       />
+
+      {/* Modale Méthodes pour apprendre une sourate */}
+      <Dialog open={showMethodsModal} onOpenChange={setShowMethodsModal}>
+        <DialogContent className="max-w-lg p-0 overflow-hidden">
+          <div
+            ref={methodsScrollRef}
+            onScroll={methodsHandleScroll}
+            className="max-h-[88vh] overflow-y-auto"
+            style={{ backgroundColor: '#fef9ec' }}
+          >
+            {/* En-tête */}
+            <div className="p-5 pb-4 sticky top-0 z-10" style={{ backgroundColor: '#fef9ec', borderBottom: '2px solid #f59e0b' }}>
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">📖</span>
+                <div>
+                  <h2 className="font-bold text-lg text-gray-800">Le Saint Coran</h2>
+                  <p className="font-arabic text-sm text-gray-600 mt-0.5" style={{ direction: 'rtl' }}>
+                    تعليم القرآن الكريم للأطفال
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Les 8 étapes */}
+            <div className="p-5 space-y-4 pb-8">
+              {([
+                <>Imprimer <span style={{ color: '#dc2626', fontWeight: 700 }}>📄 la fiche PDF de la sourate</span> et la mettre dans une pochette en plastique pour la protéger.</>,
+                <><span style={{ color: '#1d4ed8', fontWeight: 700 }}>Écouter</span> la récitation par versets, plusieurs fois pour chaque verset jusqu'à bien maîtriser sa <span style={{ color: '#1d4ed8', fontWeight: 700 }}>lecture</span>.</>,
+                <><span style={{ color: '#1d4ed8', fontWeight: 700 }}>Écouter</span> et <span style={{ color: '#1d4ed8', fontWeight: 700 }}>répéter</span> la sourate en entier avec la récitation continue, jusqu'à avoir une lecture fluide.</>,
+                <>Accrocher la sourate imprimée protégée ou l'emmener partout pour l'avoir sous la main et <span style={{ color: '#1d4ed8', fontWeight: 700 }}>répéter</span> plusieurs fois chaque verset jusqu'à sa bonne mémorisation.</>,
+                <>Ne pas passer au verset suivant si on n'a pas encore bien <span style={{ color: '#1d4ed8', fontWeight: 700 }}>mémorisé</span> le verset en cours.</>,
+                <>Après chaque verset appris, il faut <span style={{ color: '#1d4ed8', fontWeight: 700 }}>répéter la sourate</span> depuis son début plusieurs fois avant de passer à l'apprentissage du verset suivant.</>,
+                <>Une fois la sourate bien apprise par cœur, la <span style={{ color: '#1d4ed8', fontWeight: 700 }}>répéter</span> plusieurs fois : minimum 30 fois, de mémoire.</>,
+                <><span style={{ color: '#1d4ed8', fontWeight: 700 }}>Réviser</span> tous les jours toutes les sourates apprises par cœur, ou au moins deux fois par semaine, si elles sont trop nombreuses.</>,
+              ] as React.ReactNode[]).map((step, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <span
+                    className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white mt-0.5"
+                    style={{ backgroundColor: '#f59e0b' }}
+                  >
+                    {i + 1}
+                  </span>
+                  <p className="text-sm text-gray-700 leading-relaxed flex-1 min-w-0">{step}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <ScrollButtons
+            showTop={methodsShowTop}
+            showBottom={methodsShowBottom}
+            onScrollTop={methodsScrollToTop}
+            onScrollBottom={methodsScrollToBottom}
+            position="absolute"
+          />
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };
