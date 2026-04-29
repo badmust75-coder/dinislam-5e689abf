@@ -300,67 +300,236 @@ const SourateDetailDialog = ({
 
   const handlePrintSourate = () => {
     const sourateVerses = NPM_VERSETS[sourate.number];
-    const sourateNum = sourate.number === 1000 ? '2-255' : sourate.number;
+    const sourateNum = sourate.number === 1000 ? '2-255' : String(sourate.number);
 
     let content = '';
     if (sourateVerses) {
       content = sourateVerses
-        .flatMap(({ parts }) => parts.map(p => `<img src="${p.imageUrl}" />`))
+        .flatMap(({ parts }) => parts.map(p => `<img src="${p.imageUrl}" class="verse-img" />`))
         .join('\n');
     } else {
-      content = `<p class="fallback">Cette sourate n'est pas encore disponible en format image.<br/>
+      content = `<p class="fallback">Cette sourate n'est pas encore disponible en format image.<br/><br/>
         <a href="https://www.coran-en-ligne.com/coran-en-arabe.html" target="_blank">
-          Télécharger sur Coran en Ligne →
+          Consulter sur Coran en Ligne →
         </a></p>`;
     }
 
-    const printWindow = window.open('', '_blank', 'width=820,height=920');
+    const printWindow = window.open('', '_blank', 'width=820,height=960');
     if (!printWindow) {
       toast.error('Popups bloquées — autorisez les popups pour cette page.');
       return;
     }
 
     printWindow.document.write(`<!DOCTYPE html>
-<html lang="fr">
+<html lang="ar">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${sourate.name_arabic} — ${sourate.name_french}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background: #fff; padding: 24px; max-width: 750px; margin: 0 auto; }
-    .header { text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #f59e0b; }
-    .ar { font-size: 30px; direction: rtl; font-family: 'Traditional Arabic', 'Amiri', serif; margin-bottom: 6px; }
-    .fr { font-size: 15px; color: #555; margin-bottom: 4px; }
-    .info { font-size: 12px; color: #999; }
-    img { width: 100%; display: block; margin: 3px auto; }
-    .fallback { text-align: center; color: #666; margin-top: 40px; line-height: 2; }
-    .fallback a { color: #f59e0b; }
-    .print-btn {
-      background: #f59e0b; color: white; border: none; border-radius: 10px;
-      padding: 10px 20px; font-size: 14px; font-weight: bold; cursor: pointer;
+
+    body {
+      background: #f4ede0;
+      font-family: 'Traditional Arabic', 'Amiri', Georgia, serif;
+      min-height: 100vh;
+    }
+
+    /* ── Barre boutons ── */
+    .btn-bar {
+      position: fixed; top: 0; left: 0; right: 0; height: 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 14px;
+      background: rgba(255,252,245,0.97);
+      border-bottom: 1px solid #d4a84b;
+      z-index: 100;
+      direction: ltr;
     }
     .close-btn {
-      background: #dc2626; color: white; border: none; border-radius: 10px;
-      padding: 10px 20px; font-size: 14px; font-weight: bold; cursor: pointer;
+      background: #c0392b; color: #fff; border: none; border-radius: 8px;
+      padding: 7px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
+      font-family: Arial, sans-serif; letter-spacing: 0.3px;
     }
-    .btn-bar {
-      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 10px; z-index: 99;
+    .print-btn {
+      background: #8b6914; color: #fff; border: none; border-radius: 8px;
+      padding: 7px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
+      font-family: Arial, sans-serif; letter-spacing: 0.3px;
     }
-    @media print { .btn-bar { display: none; } body { padding: 8px; } }
+
+    /* ── Page centrale ── */
+    .page {
+      max-width: 680px;
+      margin: 60px auto 40px;
+      background: #fffdf7;
+      border: 1px solid #d4a84b;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(139,105,20,0.15);
+    }
+
+    /* ── Bordure géométrique du haut ── */
+    .top-border {
+      height: 8px;
+      background: repeating-linear-gradient(
+        90deg,
+        #8b6914 0px, #8b6914 10px,
+        #c9a84c 10px, #c9a84c 20px,
+        #e8d5a3 20px, #e8d5a3 30px,
+        #c9a84c 30px, #c9a84c 40px
+      );
+    }
+
+    /* ── En-tête ── */
+    .header {
+      background: linear-gradient(160deg, #7a5510 0%, #c9963a 45%, #7a5510 100%);
+      padding: 28px 24px 24px;
+      text-align: center;
+      direction: rtl;
+    }
+    .header-ornament {
+      color: rgba(255,255,255,0.45);
+      font-size: 11px;
+      letter-spacing: 10px;
+      margin-bottom: 14px;
+      direction: ltr;
+    }
+    .sourate-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 40px; height: 40px;
+      border: 1.5px solid rgba(255,255,255,0.65);
+      border-radius: 50%;
+      color: rgba(255,255,255,0.9);
+      font-size: 13px; font-weight: 700;
+      margin: 0 auto 12px;
+      font-family: Arial, sans-serif;
+      direction: ltr;
+    }
+    .sourate-name-ar {
+      font-size: 36px; color: #fff;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      margin-bottom: 8px; line-height: 1.2;
+    }
+    .sourate-name-fr {
+      font-size: 13px; color: rgba(255,255,255,0.88);
+      font-family: Georgia, serif; direction: ltr;
+      margin-bottom: 5px;
+    }
+    .sourate-meta {
+      font-size: 10px; color: rgba(255,255,255,0.6);
+      font-family: Arial, sans-serif; direction: ltr;
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+    .header-ornament-bottom {
+      color: rgba(255,255,255,0.35);
+      font-size: 11px; letter-spacing: 10px;
+      margin-top: 14px; direction: ltr;
+    }
+
+    /* ── Séparateur arabesque ── */
+    .divider {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 12px 20px;
+      background: #fef9ec;
+      border-bottom: 1px solid #e8d5a3;
+      direction: ltr;
+    }
+    .divider-line {
+      flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #c9a84c, transparent);
+    }
+    .divider-gem { color: #c9a84c; font-size: 14px; }
+
+    /* ── Contenu ── */
+    .content {
+      padding: 16px 12px 24px;
+      background: #fffdf7;
+      direction: rtl;
+    }
+    .verse-img {
+      display: block; width: 100%; max-width: 100%;
+      margin: 1px auto;
+    }
+
+    /* ── Fallback ── */
+    .fallback {
+      text-align: center; color: #7a5510;
+      padding: 40px 20px; line-height: 2.2;
+      font-family: Arial, sans-serif; font-size: 14px; direction: ltr;
+    }
+    .fallback a { color: #c9963a; font-weight: bold; }
+
+    /* ── Pied de page ── */
+    .footer {
+      text-align: center; padding: 14px;
+      background: #fef9ec;
+      border-top: 1px solid #e8d5a3;
+      direction: rtl;
+    }
+    .footer-ar {
+      font-size: 15px; color: #8b6914; letter-spacing: 2px;
+    }
+    .footer-sub {
+      font-size: 10px; color: #b8956a;
+      font-family: Arial, sans-serif; direction: ltr;
+      margin-top: 4px; letter-spacing: 1px;
+    }
+
+    /* ── Bordure géométrique du bas ── */
+    .bottom-border {
+      height: 8px;
+      background: repeating-linear-gradient(
+        90deg,
+        #e8d5a3 0px, #e8d5a3 10px,
+        #c9a84c 10px, #c9a84c 20px,
+        #8b6914 20px, #8b6914 30px,
+        #c9a84c 30px, #c9a84c 40px
+      );
+    }
+
+    @media print {
+      .btn-bar { display: none; }
+      body { background: white; }
+      .page { box-shadow: none; margin: 0; max-width: 100%; border-radius: 0; border: none; }
+      .top-border, .bottom-border { display: none; }
+    }
   </style>
 </head>
 <body>
+
   <div class="btn-bar">
     <button class="close-btn" onclick="window.close()">✕ Fermer</button>
     <button class="print-btn" onclick="window.print()">🖨️ Imprimer / PDF</button>
   </div>
-  <div class="header">
-    <div class="ar">${sourate.name_arabic}</div>
-    <div class="fr">${sourate.name_french}</div>
-    <div class="info">Sourate n°${sourateNum} · ${sourate.verses_count} versets · ${sourate.revelation_type}</div>
+
+  <div class="page">
+    <div class="top-border"></div>
+
+    <div class="header">
+      <div class="header-ornament">✦ &nbsp; ◆ &nbsp; ✦</div>
+      <div class="sourate-badge">${sourateNum}</div>
+      <div class="sourate-name-ar">${sourate.name_arabic}</div>
+      <div class="sourate-name-fr">${sourate.name_french}</div>
+      <div class="sourate-meta">${sourate.verses_count} versets &nbsp;·&nbsp; ${sourate.revelation_type}</div>
+      <div class="header-ornament-bottom">✦ &nbsp; ◆ &nbsp; ✦</div>
+    </div>
+
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-gem">❖</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="content">
+      ${content}
+    </div>
+
+    <div class="footer">
+      <div class="footer-ar">بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيم</div>
+      <div class="footer-sub">Dinislam · تعليم القرآن الكريم</div>
+    </div>
+
+    <div class="bottom-border"></div>
   </div>
-  ${content}
+
 </body>
 </html>`);
     printWindow.document.close();
