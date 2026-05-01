@@ -9,6 +9,7 @@ export interface InvocationEnrichment {
   virtue: string;
   source: string;
   extra?: string; // info complémentaire (ex: si on oublie...)
+  videoUrl?: string; // URL YouTube (watch) pour la vidéo d'apprentissage
 }
 
 export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
@@ -20,6 +21,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Louange à Allah qui nous a redonné la vie après nous avoir fait mourir, et c'est vers Lui que sera la résurrection.",
     virtue: "Le Prophète ﷺ récitait cette invocation chaque matin en se réveillant. Commencer la journée en remerciant Allah la place sous les meilleurs auspices.",
     source: "Rapporté par Al-Bukhârî (n°6312)",
+    videoUrl: "https://www.youtube.com/watch?v=33ZSOL8xZmI",
   },
   // 2. En se couchant
   {
@@ -29,6 +31,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "C'est en prononçant Ton nom, ô Allah, que je meurs et que je vis.",
     virtue: "Le Prophète ﷺ récitait ceci avant de dormir. Le sommeil est comparé à une petite mort ; se confier à Allah avant de s'endormir est une grande Sunna.",
     source: "Rapporté par Al-Bukhârî (n°6324)",
+    videoUrl: "https://www.youtube.com/watch?v=zWvbeHqKmS0",
   },
   // 3. En entrant à la mosquée
   {
@@ -38,6 +41,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Ô Allah, ouvre-moi les portes de Ta miséricorde.",
     virtue: "On entre dans la mosquée par le pied droit. La mosquée est la maison d'Allah — y entrer est l'occasion de demander Sa miséricorde.",
     source: "Rapporté par Muslim (n°713)",
+    videoUrl: "https://www.youtube.com/watch?v=9fxlVTWa6fo",
   },
   // 4. En sortant de la mosquée
   {
@@ -47,6 +51,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Ô Allah, je Te demande de Ta grâce.",
     virtue: "On sort de la mosquée par le pied gauche. En quittant la maison d'Allah, on Lui demande d'accompagner notre journée de Sa faveur et de Sa bénédiction.",
     source: "Rapporté par Muslim (n°713)",
+    videoUrl: "https://www.youtube.com/watch?v=Rwop5bZAOuE",
   },
   // 5. Avant de manger
   {
@@ -57,6 +62,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     virtue: "Dire Bismillâh avant de manger permet à la nourriture d'être une bénédiction et protège des méfaits des shaytanes.",
     source: "Rapporté par Abû Dâwûd (n°3767) et At-Tirmidhî (n°1858)",
     extra: "Si tu oublies de dire Bismillâh au début, dis dès que tu t'en souviens : بِسْمِ اللهِ أَوَّلَهُ وَآخِرَهُ (Bismillâhi awwalahu wa âkhirahu — « Au nom d'Allah au début et à la fin »).",
+    videoUrl: "https://www.youtube.com/watch?v=zh0toDrooLw",
   },
   // 6. Après avoir mangé
   {
@@ -66,6 +72,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Louange à Allah qui m'a nourri de ceci et me l'a accordé sans force ni puissance de ma part.",
     virtue: "Le Prophète ﷺ a dit : « Celui qui mange un repas et dit ensuite cette invocation, ses péchés passés lui seront pardonnés. » Quelle belle récompense pour un simple remerciement !",
     source: "Rapporté par Abû Dâwûd (n°4023) et At-Tirmidhî (n°3458)",
+    videoUrl: "https://www.youtube.com/watch?v=GIGijvsu9_Y",
   },
   // 7. En entrant aux toilettes
   {
@@ -75,6 +82,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Au nom d'Allah. Ô Allah, je me réfugie auprès de Toi contre les diables mâles et femelles.",
     virtue: "On entre par le pied gauche. Les toilettes sont un endroit où les djinns résident ; cette invocation crée une barrière de protection divine.",
     source: "Rapporté par Al-Bukhârî (n°142) et Muslim (n°375)",
+    videoUrl: "https://www.youtube.com/watch?v=UAV2xnzlwIE",
   },
   // 8. En sortant des toilettes
   {
@@ -84,6 +92,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Je Te demande Ton pardon.",
     virtue: "On sort par le pied droit. Ce mot, récité par le Prophète ﷺ en sortant des toilettes, est une belle occasion de demander le pardon d'Allah pour nos péchés.",
     source: "Rapporté par Abû Dâwûd (n°30), At-Tirmidhî (n°7) et Ibn Mâjah (n°300)",
+    videoUrl: "https://www.youtube.com/watch?v=nZbjTojuYic",
   },
   // 9. En montant dans la voiture
   {
@@ -93,6 +102,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Au nom d'Allah et louange à Allah ! Gloire à Celui qui nous a soumis cela alors que nous n'aurions pu le maîtriser, et c'est vers notre Seigneur que nous retournerons.",
     virtue: "Cette invocation rappelle que tout véhicule est un don d'Allah. Elle protège le voyageur et lui rappelle que son retour final est vers son Seigneur.",
     source: "Coran (43:13-14) · Abû Dâwûd (n°2602) · At-Tirmidhî (n°3446)",
+    videoUrl: "https://www.youtube.com/watch?v=5DBoa9jbU00",
   },
   // 10. La nuit / dhikr du soir
   {
@@ -102,6 +112,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Par Ton nom, mon Seigneur, j'étends mon côté et par Ton nom je le lève. Si Tu prends mon âme, aie pitié d'elle, et si Tu la libères, protège-la comme Tu protèges Tes serviteurs vertueux.",
     virtue: "Le Prophète ﷺ récitait cette invocation chaque soir avant de dormir. Elle exprime une confiance totale en Allah pour la nuit, qui est une petite mort.",
     source: "Rapporté par Al-Bukhârî (n°6320) et Muslim (n°2714)",
+    videoUrl: "https://www.youtube.com/watch?v=NbQrV6n3AgI",
   },
 ];
 

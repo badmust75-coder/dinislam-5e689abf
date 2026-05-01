@@ -67,12 +67,22 @@ interface InvocationDetailDialogProps {
   isRequestingValidation: boolean;
 }
 
+const getYoutubeEmbedUrl = (watchUrl: string): string | null => {
+  try {
+    const videoId = new URL(watchUrl).searchParams.get('v');
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  } catch {
+    return null;
+  }
+};
+
 const InvocationDetailDialog = ({ invocation, contents, progress, validationRequest, onClose, onMarkMemorized, onRequestValidation, isRequestingValidation }: InvocationDetailDialogProps) => {
   const isMemorized = progress?.is_memorized ?? false;
   const isValidated = progress?.is_validated ?? false;
   const isRefused = validationRequest?.status === 'refused';
   const enrichment = getInvocationEnrichment(invocation.title_french);
   const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } = useScrollToTop();
+  const embedUrl = enrichment?.videoUrl ? getYoutubeEmbedUrl(enrichment.videoUrl) : null;
 
   const arabicText = invocation.content_arabic || enrichment?.arabic || '';
   const frenchText = invocation.content_french || enrichment?.translation || '';
@@ -100,6 +110,26 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
           </div>
 
           <div className="p-5 space-y-4 pb-8">
+
+            {/* Vidéo YouTube d'apprentissage */}
+            {embedUrl && (
+              <div className="rounded-2xl overflow-hidden border border-border shadow-sm">
+                <div className="bg-teal-700 px-3 py-1.5 flex items-center gap-2">
+                  <Video className="h-3.5 w-3.5 text-white/80 flex-shrink-0" />
+                  <p className="text-xs text-white/90 font-medium">Apprendre l'invocation</p>
+                </div>
+                <div className="aspect-video">
+                  <iframe
+                    src={embedUrl}
+                    title={`Invocation — ${invocation.title_french}`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Texte arabe */}
             {arabicText ? (
