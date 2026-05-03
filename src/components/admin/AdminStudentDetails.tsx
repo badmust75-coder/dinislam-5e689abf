@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -7,10 +7,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  ArrowLeft, User, Search, ChevronRight, 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  ArrowLeft, User, Search,
   Moon, Sparkles, BookOpen, Hand, BookMarked,
-  MessageSquare, MoreVertical, CalendarIcon, KeyRound, Eye, EyeOff
+  MessageSquare, MoreVertical, CalendarIcon, KeyRound, Eye, EyeOff,
+  TrendingDown, Loader2,
 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -53,6 +59,15 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
   const [showNewPwd, setShowNewPwd] = useState(false);
   const [savingPwd, setSavingPwd] = useState(false);
 
+  // Retrograde confirm state
+  const [retrogradeTarget, setRetrogradeTarget] = useState<{
+    table: 'user_sourate_progress' | 'user_nourania_progress' | 'user_invocation_progress';
+    requestTable: 'sourate_validation_requests' | 'nourania_validation_requests' | 'invocation_validation_requests';
+    itemIdField: string;
+    itemId: string | number;
+    label: string;
+  } | null>(null);
+
   const { data: students, isLoading } = useQuery({
     queryKey: ['admin-students-details'],
     queryFn: async () => {
@@ -80,10 +95,6 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
     enabled: !!selectedStudent,
     queryFn: async () => {
       if (!selectedStudent) return null;
-
-      console.log('=== DEBUG PROGRESS for student:', selectedStudent.id);
-      const testQuery = await supabase.from('user_ramadan_progress').select('*').eq('user_id', selectedStudent.id);
-      console.log('=== RAMADAN RAW DATA:', testQuery.data, 'ERROR:', testQuery.error);
 
       const [
         { data: sourateProgress }, { data: ramadanProgress },
@@ -114,6 +125,86 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
         alphabet: { validated: alphabetProgress?.filter(p => p.is_validated).length || 0, total: totalAlphabetLetters || 0 },
         invocations: { memorized: invocationProgress?.filter(p => p.is_memorized).length || 0, total: totalInvocations || 0 },
       } as StudentProgress;
+    },
+  });
+
+  // Detailed validated items for retrograde
+  const { data: validatedDetails } = useQuery({
+    queryKey: ['student-validated-details', selectedStudent?.id],
+    enabled: !!selectedStudent,
+    queryFn: async () => {
+      if (!selectedStudent) return null;
+      const uid = selectedStudent.id;
+
+      const [
+        { data: sourateRows },
+        { data: nouraniaRows },
+        { data: invocationRows },
+      ] = await Promise.all([
+        supabase
+          .from('user_sourate_progress')
+          .select('id, sourate_id, sourates(number, name_french)')
+          .eq('user_id', uid)
+          .eq('is_validated', true),
+        supabase
+          .from('user_nourania_progress')
+          .select('id, lesson_id, nourania_lessons(lesson_number, title_french)')
+          .eq('user_id', uid)
+          .eq('is_validated', true),
+        supabase
+          .from('user_invocation_progress')
+          .select('id, invocation_id, invocations(title_french)')
+          .eq('user_id', uid)
+          .eq('is_validated', true),
+      ]);
+
+      return {
+        sourates: (sourateRows || []).map((r: any) => ({
+          progressId: r.id,
+          itemId: r.sourate_id,
+          label: `${r.sourates?.number} — ${r.sourates?.name_french}`,
+        })),
+        nourania: (nouraniaRows || []).map((r: any) => ({
+          progressId: r.id,
+          itemId: r.lesson_id,
+          label: `Leçon ${r.nourania_lessons?.lesson_number} — ${r.nourania_lessons?.title_french}`,
+        })),
+        invocations: (invocationRows || []).map((r: any) => ({
+          progressId: r.id,
+          itemId: r.invocation_id,
+          label: r.invocations?.title_french,
+        })),
+      };
+    },
+  });
+
+  const retrogradeMutation = useMutation({
+    mutationFn: async (target: NonNullable<typeof retrogradeTarget>) => {
+      if (!selectedStudent) throw new Error('Aucun élève sélectionné');
+
+      // 1. Mettre is_validated = false dans la table de progression
+      const { error: progressError } = await (supabase as any)
+        .from(target.table)
+        .update({ is_validated: false })
+        .eq('user_id', selectedStudent.id)
+        .eq(target.itemIdField, target.itemId);
+      if (progressError) throw progressError;
+
+      // 2. Supprimer la demande de validation (pour que l'élève puisse re-soumettre)
+      await (supabase as any)
+        .from(target.requestTable)
+        .delete()
+        .eq('user_id', selectedStudent.id)
+        .eq(target.itemIdField, target.itemId);
+    },
+    onSuccess: (_, target) => {
+      toast.success(`🔓 "${target.label}" rétrogradé — l'élève devra re-soumettre`);
+      queryClient.invalidateQueries({ queryKey: ['student-progress-details', selectedStudent?.id] });
+      queryClient.invalidateQueries({ queryKey: ['student-validated-details', selectedStudent?.id] });
+      setRetrogradeTarget(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Erreur lors de la rétrogradation');
     },
   });
 
@@ -217,6 +308,45 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
         </div>
         <Progress value={percentage} className="h-2" />
         <p className="text-xs text-muted-foreground text-right">{value}/{total}</p>
+      </div>
+    );
+  };
+
+  const RetrogradeList = ({
+    items,
+    table,
+    requestTable,
+    itemIdField,
+    emptyLabel,
+  }: {
+    items: { progressId: string; itemId: string | number; label: string }[];
+    table: NonNullable<typeof retrogradeTarget>['table'];
+    requestTable: NonNullable<typeof retrogradeTarget>['requestTable'];
+    itemIdField: string;
+    emptyLabel: string;
+  }) => {
+    if (items.length === 0) {
+      return <p className="text-sm text-muted-foreground text-center py-4">{emptyLabel}</p>;
+    }
+    return (
+      <div className="space-y-2">
+        {items.map((item) => (
+          <div
+            key={item.progressId}
+            className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-muted/40 border border-border"
+          >
+            <span className="text-sm text-foreground flex-1 min-w-0 [overflow-wrap:anywhere]">{item.label}</span>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="flex-shrink-0 h-7 px-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+              onClick={() => setRetrogradeTarget({ table, requestTable, itemIdField, itemId: item.itemId, label: item.label })}
+            >
+              <TrendingDown className="h-3.5 w-3.5 mr-1" />
+              <span className="text-xs">Rétrograder</span>
+            </Button>
+          </div>
+        ))}
       </div>
     );
   };
@@ -332,7 +462,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
 
       {/* Progress dialog */}
       <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto" level="nested">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto" level="nested">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <User className="h-5 w-5" /> {selectedStudent?.full_name || 'Élève'}
@@ -344,6 +474,8 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                 <p className="text-sm text-muted-foreground mb-1">Email</p>
                 <p className="font-medium">{selectedStudent?.email}</p>
               </div>
+
+              {/* Barres de progression */}
               <div className="space-y-4">
                 <h4 className="font-semibold text-foreground">Progression par module</h4>
                 {progressBar(studentProgress.ramadan.completed, studentProgress.ramadan.total, 'Ramadan', <Moon className="h-4 w-4 text-gold" />)}
@@ -353,10 +485,90 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                 {progressBar(studentProgress.sourates.validated, studentProgress.sourates.total, 'Sourates', <BookMarked className="h-4 w-4 text-gold" />)}
                 {progressBar(studentProgress.prayer.validated, studentProgress.prayer.total, 'Prière', <Hand className="h-4 w-4 text-primary" />)}
               </div>
+
+              {/* Section Rétrograder */}
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingDown className="h-4 w-4 text-orange-500" />
+                  <h4 className="font-semibold text-foreground">Rétrograder une leçon</h4>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Annule la validation d'une leçon — l'élève devra re-soumettre pour passer à la suivante.
+                </p>
+
+                <Tabs defaultValue="sourates">
+                  <TabsList className="w-full grid grid-cols-3 mb-3">
+                    <TabsTrigger value="sourates" className="text-xs">
+                      Sourates ({validatedDetails?.sourates.length ?? 0})
+                    </TabsTrigger>
+                    <TabsTrigger value="nourania" className="text-xs">
+                      Nourania ({validatedDetails?.nourania.length ?? 0})
+                    </TabsTrigger>
+                    <TabsTrigger value="invocations" className="text-xs">
+                      Invocations ({validatedDetails?.invocations.length ?? 0})
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="sourates">
+                    <RetrogradeList
+                      items={validatedDetails?.sourates ?? []}
+                      table="user_sourate_progress"
+                      requestTable="sourate_validation_requests"
+                      itemIdField="sourate_id"
+                      emptyLabel="Aucune sourate validée"
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="nourania">
+                    <RetrogradeList
+                      items={validatedDetails?.nourania ?? []}
+                      table="user_nourania_progress"
+                      requestTable="nourania_validation_requests"
+                      itemIdField="lesson_id"
+                      emptyLabel="Aucune leçon Nourania validée"
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="invocations">
+                    <RetrogradeList
+                      items={validatedDetails?.invocations ?? []}
+                      table="user_invocation_progress"
+                      requestTable="invocation_validation_requests"
+                      itemIdField="invocation_id"
+                      emptyLabel="Aucune invocation validée"
+                    />
+                  </TabsContent>
+                </Tabs>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog de confirmation — rétrograder */}
+      <AlertDialog open={!!retrogradeTarget} onOpenChange={(open) => { if (!open) setRetrogradeTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rétrograder cette leçon ?</AlertDialogTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              « {retrogradeTarget?.label} »
+              <br />
+              La validation sera annulée. L'élève devra re-soumettre sa demande avant de passer à la leçon suivante.
+            </p>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+              onClick={() => retrogradeTarget && retrogradeMutation.mutate(retrogradeTarget)}
+              disabled={retrogradeMutation.isPending}
+            >
+              {retrogradeMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Oui, rétrograder
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* DOB dialog */}
       <Dialog open={!!dobDialogStudent} onOpenChange={() => setDobDialogStudent(null)}>
@@ -446,8 +658,5 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
     </div>
   );
 };
-
-// Need Loader2 import
-import { Loader2 } from 'lucide-react';
 
 export default AdminStudentDetails;
