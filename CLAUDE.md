@@ -6,6 +6,39 @@ Ce fichier fournit des instructions à Claude Code (claude.ai/code) pour travail
 
 Dinislam est une application web d'éducation islamique (en français) construite avec React + TypeScript + Vite, utilisant Supabase comme backend. Elle couvre les sourates du Coran (114 + Ayat Al-Kursi), les invocations, la méthode Nourania, l'apprentissage de la prière, les activités du Ramadan, l'alphabet arabe, les noms d'Allah, la grammaire/conjugaison, le vocabulaire, les hadiths, et plus encore. Elle dispose de rôles admin/élève avec un workflow d'approbation (accepter/refuser), un suivi de présence, des devoirs, une messagerie, des notifications push, un classement et un chat mascotte (via Supabase Edge Function).
 
+## 🔐 Problèmes de connexion élève — diagnostic rapide (màj 2026-05-03)
+
+Quand un élève ne peut pas se connecter, proposer **immédiatement** ces étapes dans l'ordre :
+
+### 1. Vérifier email + mot de passe enregistré
+```sql
+SELECT p.full_name, p.plain_password, u.email
+FROM profiles p
+JOIN auth.users u ON u.id = p.user_id
+WHERE lower(p.full_name) LIKE '%prénom%';
+```
+
+### 2. Vérifier si le compte est approuvé
+```sql
+SELECT full_name, is_approved, created_at
+FROM profiles
+WHERE lower(full_name) LIKE '%prénom%';
+```
+→ Si `is_approved = false` : approuver via le panneau admin (🛡️ → Inscriptions → Accepter) ou :
+```sql
+UPDATE profiles SET is_approved = true WHERE lower(full_name) LIKE '%prénom%';
+```
+
+### 3. Confirmer l'email manuellement (erreur "email non confirmé")
+```sql
+UPDATE auth.users SET email_confirmed_at = now() WHERE email = 'email@exemple.com';
+```
+
+### 4. Réinitialiser le mot de passe
+Via l'app : **Panneau admin → Élèves → élève → ⋯ → Modifier le mot de passe**
+
+---
+
 ## ⬆️⬇️ Boutons scroll haut/bas — règle acquise (màj 2026-04-26)
 
 Présents dans **toutes** les zones scrollables.
