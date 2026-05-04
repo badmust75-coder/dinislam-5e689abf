@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { NPM_VERSETS } from './npmVersets';
 import { getCdnAudioUrl } from './cdnAudio';
+import { getHoussaryEmbedUrl } from '@/data/houssaryVideos';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -591,7 +592,30 @@ const SourateDetailDialog = ({
             </p>
           </div>
 
-          {/* Vidéo YouTube */}
+          {/* Récitation complète — Sheikh El Houssary */}
+          {(() => {
+            const houssaryUrl = getHoussaryEmbedUrl(sourate.number);
+            if (!houssaryUrl) return null;
+            return (
+              <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: '#f5f3ff', borderColor: '#ddd6fe' }}>
+                <p className="text-sm font-semibold px-4 pt-3 pb-2 flex items-center gap-2" style={{ color: '#6d28d9' }}>
+                  🎙️ Récitation complète — Sheikh El Houssary
+                </p>
+                <div className="aspect-video">
+                  <iframe
+                    src={houssaryUrl}
+                    title={`Récitation El Houssary — ${sourate.name_french}`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                    allowFullScreen
+                    className="w-full h-full"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Vidéo YouTube (admin) */}
           {videoUrl && (
             <LecteurVideoSourate videoUrl={videoUrl} />
           )}
@@ -685,6 +709,7 @@ const SourateDetailDialog = ({
                     ? `/audio/ayat-al-kursi/002_e${String(num).padStart(2, '0')}.mp3`
                     : getCdnAudioUrl(sourate.number, num);
                   const isVerseValidated = verseProgress.get(`${dbId}-${num}`) || false;
+                  const verseData = verses.find(v => v.id === num);
                   return (
                     <div
                       key={num}
@@ -705,10 +730,18 @@ const SourateDetailDialog = ({
                       />
                       <div className="flex-1 min-w-0 space-y-2">
                         {parts.map((part, i) => (
-                          <div key={i} className="space-y-1">
-                            <img src={part.imageUrl} alt={`Verset ${num}`} className="w-full object-contain" style={{ maxHeight: '80px' }} />
-                          </div>
+                          <img key={i} src={part.imageUrl} alt={`Verset ${num}`} className="w-full object-contain" style={{ maxHeight: '80px' }} />
                         ))}
+                        {verseData?.transliteration && (
+                          <p className="text-xs italic leading-relaxed" style={{ color: '#0f766e' }}>
+                            {verseData.transliteration}
+                          </p>
+                        )}
+                        {verseData?.translation_fr && (
+                          <p className="text-xs leading-relaxed text-muted-foreground">
+                            « {verseData.translation_fr} »
+                          </p>
+                        )}
                         {cdnAudio && <LecteurVerset audioUrl={cdnAudio} />}
                         <p className={cn(
                           'text-[10px] font-medium',
