@@ -155,6 +155,20 @@ Toutes les mutations de validation utilisent des **mises à jour optimistes** po
 
 Les cartes `students`, `messages`, `attendance`, `homework`, `recitations` dans `ADMIN_ONLY_CARDS` n'affichent jamais le toggle de visibilité élèves (pas d'icône œil).
 
+## Nettoyage tableau de bord + accueil admin (màj 2026-05-04)
+
+### Cartes supprimées du code (`STATIC_CARDS` dans `Admin.tsx`)
+- `messages` (Messages)
+- `attendance` (Registre de Présence)
+- `recitations` (Corriger audios)
+- `homework` (Cahier de texte)
+Ces fonctions restent accessibles via le panneau admin (🛡️) et le header — supprimées du tableau de bord car doublons.
+
+### Cartes supprimées de la base de données
+- Table `dashboard_cards` : suppression de "Élèves", "Utilisateurs", "Messages", "Registre de Présence"
+- Table `learning_modules` : suppression de "Élèves", "Utilisateurs", "Messages", "Registre de Présence"
+Ces cartes étaient visibles sur la page d'accueil et dans le tableau de bord admin — elles faisaient doublon avec le panneau admin (🛡️) et le header.
+
 ## Panneau admin (🛡️) — AdminCommandModal
 
 - **Boutons actions** (grands, avec badge rouge si en attente) : 📚 Devoirs · 🎙️ Récitations · 📖 Sourates · 🔤 Nourania
