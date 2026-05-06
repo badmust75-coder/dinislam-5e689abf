@@ -312,64 +312,87 @@ const handleModuleClick = (mod: any) => {
           </div>
 
           {/* Prochaine Prière */}
-          <div className="bg-card rounded-2xl p-4 shadow-card border border-indigo-200 dark:border-indigo-800 animate-fade-in">
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <h3 className="font-bold text-foreground flex items-center gap-2">
-                🕌 Prochaine prière
-              </h3>
-              <span className="text-xs text-muted-foreground">{prayerCity.label}</span>
-            </div>
-            {!prayerTimes ? (
-              <p className="text-sm text-muted-foreground text-center py-2">Chargement des horaires...</p>
-            ) : (
-              <>
-                {nextPrayer && (
-                  <div className="flex items-center justify-center gap-3 mb-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl py-3">
-                    <span className="text-3xl">{PRAYER_EMOJI[nextPrayer.name] ?? '🕌'}</span>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Prochaine</p>
-                      <p className="font-bold text-lg text-indigo-700 dark:text-indigo-300">{nextPrayer.name}</p>
-                      <p className="text-2xl font-bold text-foreground">{nextPrayer.time}</p>
-                    </div>
+          <div className="rounded-2xl overflow-hidden shadow-md animate-fade-in">
+            {/* Header dégradé */}
+            <div className="bg-gradient-to-r from-violet-500 via-indigo-500 to-blue-500 px-4 pt-4 pb-6 relative">
+              <div className="absolute inset-0 opacity-20 pointer-events-none select-none overflow-hidden">
+                <span className="absolute top-1 right-3 text-4xl">🌙</span>
+                <span className="absolute bottom-1 left-2 text-2xl">⭐</span>
+                <span className="absolute top-2 left-1/2 text-xl">✨</span>
+              </div>
+              <div className="relative flex items-center justify-between">
+                <h3 className="font-bold text-white text-base flex items-center gap-2">
+                  🕌 Prochaine prière
+                </h3>
+                <span className="text-xs text-white/70 bg-white/20 px-2 py-0.5 rounded-full">{prayerCity.label}</span>
+              </div>
+              {nextPrayer && (
+                <div className="relative mt-3 flex items-center justify-center gap-4">
+                  <span className="text-5xl drop-shadow">{PRAYER_EMOJI[nextPrayer.name] ?? '🕌'}</span>
+                  <div>
+                    <p className="text-white/70 text-xs font-medium uppercase tracking-wide">Prochaine</p>
+                    <p className="text-white font-extrabold text-xl leading-tight">{nextPrayer.name}</p>
+                    <p className="text-white font-black text-4xl leading-none">{nextPrayer.time}</p>
                   </div>
-                )}
-                <div className="grid grid-cols-5 gap-1 text-center">
+                </div>
+              )}
+            </div>
+            {/* Grille horaires */}
+            <div className="bg-white dark:bg-slate-800 px-3 py-3">
+              {!prayerTimes ? (
+                <p className="text-sm text-muted-foreground text-center py-1">Chargement...</p>
+              ) : (
+                <div className="grid grid-cols-5 gap-1.5 text-center">
                   {[
-                    { name: 'Fajr', time: prayerTimes.fajr },
-                    { name: 'Dohr', time: prayerTimes.dhuhr },
-                    { name: 'Asr', time: prayerTimes.asr },
-                    { name: 'Maghrib', time: prayerTimes.maghrib },
-                    { name: 'Icha', time: prayerTimes.isha },
+                    { name: 'Fajr', emoji: '🌅', time: prayerTimes.fajr, color: 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300' },
+                    { name: 'Dohr', emoji: '☀️', time: prayerTimes.dhuhr, color: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' },
+                    { name: 'Asr', emoji: '🍃', time: prayerTimes.asr, color: 'bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' },
+                    { name: 'Maghrib', emoji: '🌇', time: prayerTimes.maghrib, color: 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300' },
+                    { name: 'Icha', emoji: '🌙', time: prayerTimes.isha, color: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' },
                   ].map(p => (
-                    <div key={p.name} className="bg-muted/50 rounded-lg py-1.5 px-0.5">
-                      <p className="text-[10px] text-muted-foreground">{p.name}</p>
-                      <p className="text-xs font-semibold text-foreground">{p.time}</p>
+                    <div key={p.name} className={`rounded-xl py-1.5 px-0.5 ${p.color}`}>
+                      <p className="text-base leading-none mb-0.5">{p.emoji}</p>
+                      <p className="text-[10px] font-semibold">{p.name}</p>
+                      <p className="text-xs font-bold">{p.time}</p>
                     </div>
                   ))}
                 </div>
-              </>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Hadith du Jour */}
-          <div className="bg-card rounded-2xl p-4 shadow-card border border-emerald-200 dark:border-emerald-800 animate-fade-in">
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <h3 className="font-bold text-foreground flex items-center gap-2">
-                🕊️ Hadith du jour
-              </h3>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-medium shrink-0">
-                {todayHadith.theme}
-              </span>
+          <div className="rounded-2xl overflow-hidden shadow-md animate-fade-in">
+            {/* Header dégradé vert */}
+            <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 px-4 py-4 relative">
+              <div className="absolute inset-0 opacity-20 pointer-events-none select-none overflow-hidden">
+                <span className="absolute top-1 right-3 text-3xl">🌿</span>
+                <span className="absolute bottom-0 left-2 text-2xl">🕊️</span>
+              </div>
+              <div className="relative flex items-center justify-between">
+                <h3 className="font-bold text-white text-base flex items-center gap-2">
+                  🕊️ Hadith du jour
+                </h3>
+                <span className="text-xs text-white font-semibold bg-white/25 px-2.5 py-0.5 rounded-full shrink-0">
+                  {todayHadith.theme}
+                </span>
+              </div>
+              {todayHadith.arabic && (
+                <p className="font-arabic text-right text-lg text-white/90 mt-2 leading-loose">
+                  {todayHadith.arabic}
+                </p>
+              )}
             </div>
-            {todayHadith.arabic && (
-              <p className="font-arabic text-right text-base text-emerald-700 dark:text-emerald-300 mb-2 leading-loose">
-                {todayHadith.arabic}
-              </p>
-            )}
-            <p className="text-sm text-foreground italic mb-2">
-              « {todayHadith.text} »
-            </p>
-            <p className="text-xs text-muted-foreground text-right">— {todayHadith.source}</p>
+            {/* Corps */}
+            <div className="bg-white dark:bg-slate-800 px-4 py-3">
+              <div className="flex gap-2 items-start">
+                <span className="text-emerald-400 text-4xl leading-none font-serif mt-[-6px] shrink-0">"</span>
+                <p className="text-sm font-medium text-foreground leading-relaxed pt-1">
+                  {todayHadith.text}
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground text-right mt-2">— {todayHadith.source}</p>
+            </div>
           </div>
 
           {/* Quick Stats - right after welcome message */}
