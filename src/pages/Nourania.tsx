@@ -81,6 +81,24 @@ const Nourania = () => {
     enabled: !!user?.id,
   });
 
+  // Realtime : rafraîchit les notes dès que l'admin en envoie une
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel('nourania-commentaires-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'nourania_commentaires_eleves',
+        filter: `student_id=eq.${user.id}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['nourania-personal-comments', user.id] });
+        toast.info('📝 Nouvelle note de l\'enseignante !');
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, queryClient]);
+
   // Fetch admin unlocks for this user
   const { data: adminUnlocks = [] } = useQuery({
     queryKey: ['nourania-admin-unlocks', user?.id],
