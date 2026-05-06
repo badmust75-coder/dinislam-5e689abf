@@ -76,18 +76,30 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
 
   const deleteRecitationMutation = useMutation({
     mutationFn: async (r: any) => {
-      // Supprimer le fichier du Storage (chemin extrait de l'URL signée ou publique)
       const path = extractStoragePath(r.audio_url);
       if (path) await supabase.storage.from('recitations').remove([path]);
       const { error } = await (supabase as any)
         .from('sourate_recitations').delete().eq('id', r.id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['student-recitations', sourateId, user?.id] });
-      toast.success('Récitation supprimée');
+    onMutate: async (r: any) => {
+      await queryClient.cancelQueries({ queryKey: ['student-recitations', sourateId, user?.id] });
+      const previous = queryClient.getQueryData(['student-recitations', sourateId, user?.id]);
+      queryClient.setQueryData(['student-recitations', sourateId, user?.id],
+        (old: any[]) => (old || []).filter((item: any) => item.id !== r.id)
+      );
+      return { previous };
     },
-    onError: () => toast.error('Erreur lors de la suppression'),
+    onSuccess: () => toast.success('Récitation supprimée'),
+    onError: (_e: any, _r: any, context: any) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['student-recitations', sourateId, user?.id], context.previous);
+      }
+      toast.error('Erreur lors de la suppression');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-recitations', sourateId, user?.id] });
+    },
   });
 
   // Realtime updates
@@ -117,12 +129,14 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
       mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current });
-        setRecorded(blob);
-        // iOS/WKWebView : createObjectURL est cassé pour les blobs audio → data URL (base64)
-        const reader = new FileReader();
-        reader.onload = (e) => setRecordedUrl(e.target?.result as string);
-        reader.readAsDataURL(blob);
         stream.getTracks().forEach(t => t.stop());
+        // Attendre la data URL avant de rendre l'audio — évite src=null sur iOS
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setRecorded(blob);
+          setRecordedUrl(e.target?.result as string);
+        };
+        reader.readAsDataURL(blob);
       };
       mediaRecorderRef.current = mr;
       mr.start();
