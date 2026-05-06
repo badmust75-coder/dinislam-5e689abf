@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,6 +39,15 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
     },
   });
 
+  const { data: groupData } = useQuery({
+    queryKey: ['attendance-group-members'],
+    queryFn: async () => {
+      const { data: g } = await supabase.from('student_groups').select('id, name, color').order('name');
+      const { data: m } = await supabase.from('student_group_members').select('group_id, user_id');
+      return { groups: g || [], members: m || [] };
+    },
+  });
+
   const { data: records = [], refetch: refetchRecords } = useQuery({
     queryKey: ['attendance-records'],
     queryFn: async () => {
@@ -63,6 +72,28 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
     });
     return map;
   }, [records]);
+
+  // Regroupe les élèves par groupe, élèves sans groupe à la fin
+  const groupedStudents = useMemo(() => {
+    if (!groupData || groupData.groups.length === 0) {
+      return [{ groupId: null, groupName: null, groupColor: null, members: students }];
+    }
+    const memberMap = new Map<string, string>(); // user_id → group_id
+    for (const m of groupData.members) memberMap.set(m.user_id, m.group_id);
+
+    const result: { groupId: string | null; groupName: string | null; groupColor: string | null; members: typeof students }[] = [];
+    for (const group of groupData.groups) {
+      const grpStudents = students.filter(s => memberMap.get(s.user_id) === group.id);
+      if (grpStudents.length > 0) {
+        result.push({ groupId: group.id, groupName: group.name, groupColor: group.color, members: grpStudents });
+      }
+    }
+    const ungrouped = students.filter(s => !memberMap.has(s.user_id));
+    if (ungrouped.length > 0) {
+      result.push({ groupId: null, groupName: 'Sans groupe', groupColor: null, members: ungrouped });
+    }
+    return result;
+  }, [students, groupData]);
 
   const addToday = async () => {
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -197,43 +228,53 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
               </div>
             </div>
 
-            {/* Rows */}
-            {students.map((student, idx) => (
-              <div
-                key={student.user_id}
-                className={cn(
-                  'flex border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors',
-                  idx % 2 === 0 ? 'bg-card' : 'bg-muted/10'
+            {/* Rows groupés */}
+            {groupedStudents.map(group => (
+              <Fragment key={group.groupId ?? '__ungrouped__'}>
+                {/* Ligne d'en-tête de groupe */}
+                {group.groupName && (
+                  <div
+                    className="flex items-center gap-2 px-4 py-1.5 text-xs font-bold text-white select-none"
+                    style={{ backgroundColor: group.groupColor || '#6b7280' }}
+                  >
+                    <span>👥 {group.groupName}</span>
+                    <span className="opacity-70">— {group.members.length} élève{group.members.length > 1 ? 's' : ''}</span>
+                  </div>
                 )}
-              >
-                <div className="w-48 shrink-0 px-4 py-3 text-sm font-medium text-foreground truncate sticky left-0 bg-inherit z-10 flex items-center gap-2">
-                  <span className="text-muted-foreground text-xs">{idx + 1}.</span>
-                  {student.full_name || student.email || 'Sans nom'}
-                </div>
-                {dates.map(date => {
-                  const record = recordMap.get(`${student.user_id}-${date}`);
-                  const status = record?.status;
-                  const display = status ? STATUS_DISPLAY[status] : null;
-
-                  return (
-                    <div
-                      key={date}
-                      className="w-20 shrink-0 flex items-center justify-center border-l border-border cursor-pointer hover:bg-muted/30 transition-colors"
-                      onClick={() => handleClickPresence(student.user_id, date, status)}
-                    >
-                      {display ? (
-                        <div
-                          className="w-7 h-7 rounded-full"
-                          style={{ backgroundColor: display.color }}
-                        />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full border-2 border-dashed border-muted-foreground/30" />
-                      )}
+                {group.members.map((student, idx) => (
+                  <div
+                    key={student.user_id}
+                    className={cn(
+                      'flex border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors',
+                      idx % 2 === 0 ? 'bg-card' : 'bg-muted/10'
+                    )}
+                  >
+                    <div className="w-48 shrink-0 px-4 py-3 text-sm font-medium text-foreground truncate sticky left-0 bg-inherit z-10 flex items-center gap-2">
+                      <span className="text-muted-foreground text-xs">{idx + 1}.</span>
+                      {student.full_name || student.email || 'Sans nom'}
                     </div>
-                  );
-                })}
-                <div className="w-16 shrink-0 border-l border-border" />
-              </div>
+                    {dates.map(date => {
+                      const record = recordMap.get(`${student.user_id}-${date}`);
+                      const status = record?.status;
+                      const display = status ? STATUS_DISPLAY[status] : null;
+                      return (
+                        <div
+                          key={date}
+                          className="w-20 shrink-0 flex items-center justify-center border-l border-border cursor-pointer hover:bg-muted/30 transition-colors"
+                          onClick={() => handleClickPresence(student.user_id, date, status)}
+                        >
+                          {display ? (
+                            <div className="w-7 h-7 rounded-full" style={{ backgroundColor: display.color }} />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full border-2 border-dashed border-muted-foreground/30" />
+                          )}
+                        </div>
+                      );
+                    })}
+                    <div className="w-16 shrink-0 border-l border-border" />
+                  </div>
+                ))}
+              </Fragment>
             ))}
 
             {students.length === 0 && (
