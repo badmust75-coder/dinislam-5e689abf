@@ -98,7 +98,10 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
       mr.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current });
         setRecorded(blob);
-        setRecordedUrl(URL.createObjectURL(blob));
+        // iOS/WKWebView : createObjectURL est cassé pour les blobs audio → data URL (base64)
+        const reader = new FileReader();
+        reader.onload = (e) => setRecordedUrl(e.target?.result as string);
+        reader.readAsDataURL(blob);
         stream.getTracks().forEach(t => t.stop());
       };
       mediaRecorderRef.current = mr;
@@ -191,7 +194,7 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
         </div>
       ) : (
         <div className="space-y-3">
-          <audio src={recordedUrl!} controls className="w-full" style={{ height: '40px' }} />
+          <audio src={recordedUrl!} controls preload="auto" className="w-full" />
           <textarea
             value={comment}
             onChange={e => setComment(e.target.value)}
@@ -232,7 +235,7 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
                     {st.label}
                   </span>
                 </div>
-                <audio src={r.audio_url} controls className="w-full" style={{ height: '36px' }} />
+                <audio src={r.audio_url} controls preload="auto" className="w-full" />
                 {r.student_comment && (
                   <p className="text-xs text-muted-foreground italic">"{r.student_comment}"</p>
                 )}
@@ -247,7 +250,7 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
                       <p className="text-xs text-blue-800 dark:text-blue-200">{r.admin_comment}</p>
                     )}
                     {r.admin_audio_url && (
-                      <audio src={r.admin_audio_url} controls className="w-full" style={{ height: '32px' }} />
+                      <audio src={r.admin_audio_url} controls preload="auto" className="w-full" />
                     )}
                   </div>
                 )}
