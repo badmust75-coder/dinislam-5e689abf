@@ -30,6 +30,12 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mimeTypeRef = useRef<string>('audio/webm');
+
+  const getBestMimeType = (): string => {
+    const candidates = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'];
+    return candidates.find(t => MediaRecorder.isTypeSupported(t)) ?? 'audio/webm';
+  };
 
   const extractStoragePath = (url: string): string | null => {
     const m = url?.match(/\/storage\/v1\/object\/(?:public|sign)\/recitations\/(.+?)(?:\?|$)/);
@@ -84,10 +90,12 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       chunksRef.current = [];
-      const mr = new MediaRecorder(stream);
+      const mimeType = getBestMimeType();
+      mimeTypeRef.current = mimeType;
+      const mr = new MediaRecorder(stream, { mimeType });
       mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current });
         setRecorded(blob);
         setRecordedUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach(t => t.stop());
@@ -119,10 +127,12 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
     if (!recorded || !user) return;
     setUploading(true);
     try {
-      const filename = `${user.id}/${sourateId}/${Date.now()}.webm`;
+      const ext = mimeTypeRef.current.includes('mp4') ? 'm4a'
+        : mimeTypeRef.current.includes('ogg') ? 'ogg' : 'webm';
+      const filename = `${user.id}/${sourateId}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from('recitations')
-        .upload(filename, recorded, { contentType: 'audio/webm', upsert: false });
+        .upload(filename, recorded, { contentType: mimeTypeRef.current, upsert: false });
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from('recitations').getPublicUrl(filename);
