@@ -151,6 +151,13 @@ Toutes les mutations de validation utilisent des **mises à jour optimistes** po
 - **Label sous chaque étoile** : `{numéro} - {name_french}` (ex : "113 - Al-Falaq (L'Aube Naissante)"), taille 9px, largeur 112px (`w-28`), wrapping sans troncature. Ayat Al-Kursi affiche "2-255" comme numéro.
 - Audios versets : CDN Alafasy `cdn.islamic.network/quran/audio/128/ar.alafasy/{N}.mp3` pour toutes les sourates sauf Ayat Al-Kursi (fichiers locaux).
 
+## Page d'accueil — ordre des blocs (màj 2026-05-07)
+1. Bannière notifications (si non fermée)
+2. Message de bienvenue (Bismillah + prénom)
+3. **Carte "Votre progression"** (juste après le message de bienvenue)
+4. Devoirs admin / BlocDevoirsEleve
+5. Grille des modules
+
 ## Cartes admin-only
 
 Les cartes `students`, `messages`, `attendance`, `homework`, `recitations` dans `ADMIN_ONLY_CARDS` n'affichent jamais le toggle de visibilité élèves (pas d'icône œil).
@@ -182,15 +189,17 @@ Ces cartes étaient visibles sur la page d'accueil et dans le tableau de bord ad
 ## Récitations (fonctionnalité 2026-04-09)
 
 - Table `sourate_recitations` : `id`, `sourate_id`, `student_id`, `audio_url`, `student_comment`, `status` (pending/validated/corrected), `admin_audio_url`, `admin_comment`, `created_at`, `updated_at`.
-- Bucket Storage `recitations` (public, 50 MB max). Fichiers élèves : `{user_id}/{sourate_id}/{timestamp}.webm`. Fichiers admin : `admin/{student_id}/{recitation_id}-response.webm`.
+- Bucket Storage `recitations` (public, 50 MB max). Fichiers élèves : `{user_id}/{sourate_id}/{timestamp}.mp4` (ou `.webm` sur Chrome). Fichiers admin : `admin/{student_id}/{recitation_id}-response.webm`.
 - **Côté élève** : `SourateRecitationPanel.tsx` dans `SourateDetailDialog.tsx` (au-dessus de la vidéo). Utilise MediaRecorder API → upload Supabase → insert en DB. Subscription realtime pour voir les réponses admin.
 - **Côté admin** : `AdminRecitationReview.tsx` accessible via la carte "Corriger audios" (ViewType `recitations`). Filtre par statut, lecture audio, champ commentaire, enregistrement audio de réponse, boutons Valider / Envoyer correction.
-- RLS : élèves voient leurs propres récitations ; admins voient et modifient toutes (`has_role(auth.uid(), 'admin'::app_role)`).
+- RLS : élèves voient et suppriment leurs propres récitations (pending seulement) ; admins voient et modifient toutes (`has_role(auth.uid(), 'admin'::app_role)`).
 - **Politique RLS admin** : si l'admin ne voit pas les récitations, relancer ce SQL : `DROP POLICY IF EXISTS "Admins full access on recitations" ON public.sourate_recitations; CREATE POLICY "Admins full access on recitations" ON public.sourate_recitations FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin'::public.app_role)) WITH CHECK (public.has_role(auth.uid(), 'admin'::public.app_role));`
+- **Politique RLS élève DELETE** (màj 2026-05-07) : `CREATE POLICY "student_delete_own_recitation" ON public.sourate_recitations FOR DELETE TO authenticated USING (student_id = auth.uid()); CREATE POLICY "student_delete_own_recitation_file" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'recitations' AND split_part(name, '/', 1) = auth.uid()::text);`
 - **Politique Storage** : bucket `recitations` public=true. Si les audios ne se lisent pas, relancer : `UPDATE storage.buckets SET public = true WHERE id = 'recitations'; DROP POLICY IF EXISTS "Public read recitations" ON storage.objects; CREATE POLICY "Public read recitations" ON storage.objects FOR SELECT USING (bucket_id = 'recitations');`
 - **URLs signées (màj 2026-04-26)** : `AdminRecitationReview` et `SourateRecitationPanel` génèrent des **signed URLs** (validité 2h) via `supabase.storage.from('recitations').createSignedUrl(path, 7200)` dans le `queryFn`. Contourne les problèmes de cache SW et restrictions iOS WKWebView. Ne pas revenir aux URLs publiques directes.
 - **Service Worker** : les requêtes vers `/storage/v1/object/` et les requêtes de `destination === 'audio'` sont toujours passées directement au réseau (jamais mises en cache). Les réponses non-200 ne sont jamais mises en cache non plus.
 - `useAdminPendingCounts` : inclut maintenant le count `recitations` (status=pending) avec abonnement realtime.
+- **Format audio iOS (màj 2026-05-07 — CRITIQUE)** : iOS Safari ne supporte PAS WebM. `mr.mimeType` est vide AVANT `mr.start()` sur iOS → fallback `audio/webm` erroné. Solution : `pickMimeType()` utilise `isTypeSupported(['audio/mp4', ...])`, crée MediaRecorder avec format explicite, lit `mr.mimeType` APRÈS `mr.start()`. Blob et upload en `audio/mp4` / `.mp4`. Preview via `FileReader.readAsDataURL()` (blob URLs cassées sur iOS WKWebView). Élèves peuvent supprimer leurs récitations "En attente" via bouton 🗑️ + AlertDialog.
 
 ## Mot de passe admin (fonctionnalité 2026-04-08)
 
@@ -271,6 +280,13 @@ Ces cartes étaient visibles sur la page d'accueil et dans le tableau de bord ad
 - Table : `nourania_lesson_content` (content_type = 'fichier', file_name = 'Cours PDF - Leçon N')
 - **Bouton "Import PDF en lot"** dans `AdminNouraniaContent.tsx` : sélectionner les 17 PDFs (lesson_01.pdf…) → upload automatique + remplacement des anciens (idempotent)
 - Pages 30-31 (instructions prof) et 32-34 (pages de couverture arrière) exclues
+
+### Affichage PDF sans scroll interne (màj 2026-05-07)
+- Composant `src/components/nourania/NouraniaPdfViewer.tsx` : utilise `react-pdf` (pdfjs-dist v5) pour rendre chaque page en `<canvas>` empilé verticalement → scroll continu sans iframe
+- Worker PDF : `public/pdf.worker.min.mjs` (copie locale de pdfjs-dist, 1 MB)
+- Suppression de l'ancienne `<iframe>` et de `getPdfHeight()` dans `Nourania.tsx`
+- Bouton "Imprimer" rouge (bordure + texte) à côté de chaque PDF → ouvre dans un nouvel onglet pour impression native
+- `react-pdf` ajouté dans `optimizeDeps.include` de `vite.config.ts`
 
 ### Notes de l'enseignante — realtime (màj 2026-05-06)
 - Table `nourania_commentaires_eleves` : `lecon_id`, `student_id`, `commentaire`, UNIQUE(lecon_id, student_id)
