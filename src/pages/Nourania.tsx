@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { Check, Lock, Play, FileText, Image as ImageIcon, File, ChevronDown, Moon } from 'lucide-react';
+import { Check, Lock, Play, FileText, Image as ImageIcon, File, ChevronDown, Moon, Printer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendPushNotification } from '@/lib/pushHelper';
@@ -534,7 +534,19 @@ const Nourania = () => {
                               <div className="space-y-2">
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                   {getContentIcon('pdf')}
-                                  <span>{content.file_name}</span>
+                                  <span className="flex-1 min-w-0 truncate">{content.file_name}</span>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(content.file_url, '_blank');
+                                    }}
+                                    className="gap-1.5 text-xs shrink-0"
+                                  >
+                                    <Printer className="h-3.5 w-3.5" />
+                                    <span className="hidden sm:inline">Imprimer</span>
+                                  </Button>
                                 </div>
                                 <NouraniaPdfViewer fileUrl={content.file_url} />
                               </div>
