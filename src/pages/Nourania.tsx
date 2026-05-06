@@ -15,6 +15,7 @@ import NouraniaUnlockDialog from '@/components/nourania/NouraniaUnlockDialog';
 import { extractYoutubeVideoId } from '@/utils/youtube';
 import { YoutubePlayer } from '@/utils/youtube';
 import AudioPlayer from '@/components/audio/AudioPlayer';
+import NouraniaPdfViewer from '@/components/nourania/NouraniaPdfViewer';
 
 const Nourania = () => {
   const { user } = useAuth();
@@ -329,17 +330,6 @@ const Nourania = () => {
     }
   };
 
-  // Hauteur iframe PDF calculée selon le nb de pages de la leçon (évite le scroll interne)
-  const getPdfHeight = (fileName: string) => {
-    const match = fileName?.match(/[Ll]e[cç]on\s*(\d+)/);
-    if (!match) return 1400;
-    const pageMap: Record<number, number> = {
-      1:1, 2:3, 3:1, 4:2, 5:2, 6:2, 7:1, 8:3, 9:3, 10:2, 11:4, 12:2, 13:3, 14:1, 15:2, 16:1, 17:3
-    };
-    const pages = pageMap[parseInt(match[1])] ?? 2;
-    return pages * 1200 + 200;
-  };
-
   const getContentIcon = (type: string) => {
     switch (type) {
       case 'video': return <Play className="h-4 w-4" />;
@@ -546,14 +536,7 @@ const Nourania = () => {
                                   {getContentIcon('pdf')}
                                   <span>{content.file_name}</span>
                                 </div>
-                                <div className="rounded-xl overflow-hidden bg-muted w-full">
-                                  <iframe
-                                    src={content.file_url}
-                                    title={content.file_name || 'PDF'}
-                                    className="w-full border-0"
-                                    style={{ height: `${getPdfHeight(content.file_name)}px` }}
-                                  />
-                                </div>
+                                <NouraniaPdfViewer fileUrl={content.file_url} />
                               </div>
                             )}
                             {content.content_type === 'image' && (
