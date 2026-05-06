@@ -154,9 +154,16 @@ Toutes les mutations de validation utilisent des **mises à jour optimistes** po
 ## Page d'accueil — ordre des blocs (màj 2026-05-07)
 1. Bannière notifications (si non fermée)
 2. Message de bienvenue (Bismillah + prénom)
-3. **Carte "Votre progression"** (juste après le message de bienvenue)
-4. Devoirs admin / BlocDevoirsEleve
-5. Grille des modules
+3. **Carte "Prochaine prière"** — horaires via `usePrayerTimesCity`, ville lue depuis `localStorage['dinislam_prayer_city']` (défaut Montpellier)
+4. **Carte "Hadith du jour"** — liste de 40 hadiths dans `Index.tsx` (constante `HADITHS`), rotation par `dayOfYear % 40`
+5. **Carte "Votre progression"**
+6. Devoirs admin / BlocDevoirsEleve
+7. Grille des modules
+
+### Détails cartes Prière & Hadith (màj 2026-05-07)
+- **Prochaine prière** : bordure indigo, fond indigo-50 pour la prière mise en avant, grille 5 colonnes (Fajr / Dohr / Asr / Maghrib / Icha), nom de ville affiché. `PRAYER_EMOJI` map pour les emojis par nom de prière.
+- **Hadith du jour** : bordure emerald, badge thème arrondi, texte arabe affiché si non vide (`font-arabic`), texte français en italique entre guillemets «», source en bas à droite. Fonction `getDayHadith()` → `HADITHS[dayOfYear % HADITHS.length]`.
+- La ville se lit dans `getSavedCity()` (même clé que `Priere.tsx` : `dinislam_prayer_city`). Si aucune ville sauvegardée → Montpellier par défaut.
 
 ## Cartes admin-only
 
