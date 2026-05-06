@@ -542,7 +542,7 @@ const Nourania = () => {
                                       e.stopPropagation();
                                       window.open(content.file_url, '_blank');
                                     }}
-                                    className="gap-1.5 text-xs shrink-0"
+                                    className="gap-1.5 text-xs shrink-0 border-red-500 text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30"
                                   >
                                     <Printer className="h-3.5 w-3.5" />
                                     <span className="hidden sm:inline">Imprimer</span>
