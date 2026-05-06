@@ -1,11 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Mic, MicOff, Upload, CheckCircle, Clock, MessageSquare } from 'lucide-react';
+import { Mic, MicOff, Upload, MessageSquare, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface SourateRecitationPanelProps {
   sourateId: string;
@@ -68,6 +72,22 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
         admin_audio_url: await toSignedUrl(r.admin_audio_url),
       })));
     },
+  });
+
+  const deleteRecitationMutation = useMutation({
+    mutationFn: async (r: any) => {
+      // Supprimer le fichier du Storage (chemin extrait de l'URL signée ou publique)
+      const path = extractStoragePath(r.audio_url);
+      if (path) await supabase.storage.from('recitations').remove([path]);
+      const { error } = await (supabase as any)
+        .from('sourate_recitations').delete().eq('id', r.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-recitations', sourateId, user?.id] });
+      toast.success('Récitation supprimée');
+    },
+    onError: () => toast.error('Erreur lors de la suppression'),
   });
 
   // Realtime updates
@@ -227,13 +247,43 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
             const st = STATUS_LABELS[r.status] || STATUS_LABELS.pending;
             return (
               <div key={r.id} className="bg-background rounded-lg p-3 space-y-2 border">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground">
                     {new Date(r.created_at).toLocaleDateString('fr-FR')}
                   </span>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${st.color}`}>
-                    {st.label}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${st.color}`}>
+                      {st.label}
+                    </span>
+                    {r.status === 'pending' && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                            disabled={deleteRecitationMutation.isPending}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Supprimer cette récitation ?</AlertDialogTitle>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteRecitationMutation.mutate(r)}
+                              className="bg-destructive hover:bg-destructive/90"
+                            >
+                              Supprimer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
                 </div>
                 <audio src={r.audio_url} controls preload="auto" className="w-full" />
                 {r.student_comment && (
