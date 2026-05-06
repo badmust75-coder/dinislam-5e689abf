@@ -237,3 +237,44 @@ Ces cartes étaient visibles sur la page d'accueil et dans le tableau de bord ad
 - Cela s'applique à TOUS les boutons/icônes poubelle, menus "Supprimer", et toute action de suppression irréversible
 - Messages adaptés au contexte : "Supprimer cet élève ?", "Supprimer ce devoir ?", etc.
 - Ne jamais supprimer directement sans confirmation, même pour de petits éléments
+
+## Nourania — Contenu PDF des leçons (màj 2026-05-06)
+
+### PDFs découpés depuis القاعدة النورانية
+- PDF source : `/Users/nadiaelb/Documents/Cours Arabe Enfants/Nourania/PDF cours d'arabe/القاعدة النورانية PC-328 copie.pdf` (34 pages)
+- PDFs découpés (17 fichiers) : `/Users/nadiaelb/Documents/Cours Arabe Enfants/Nourania/PDFs leçons/lesson_01.pdf` à `lesson_17.pdf`
+- Script de génération : pypdf (pip3 install pypdf) + mapping pages ci-dessous
+
+### Mapping pages PDF → leçons (0-indexé)
+| Leçon | Indices pypdf | Pages PDF |
+|-------|--------------|-----------|
+| L1 | [6] | 7 |
+| L2 | [7,8,9] | 8-10 |
+| L3 | [9] | 10 |
+| L4 | [10,11] | 11-12 |
+| L5 | [11,12] | 12-13 |
+| L6 | [12,13] | 13-14 |
+| L7 | [13] | 14 |
+| L8 | [14,15,16] | 15-17 |
+| L9 | [16,17,18] | 17-19 |
+| L10 | [18,19] | 19-20 |
+| L11 | [19,20,21,22] | 20-23 |
+| L12 | [22,23] | 23-24 |
+| L13 | [23,24,25] | 24-26 |
+| L14 | [25] | 26 |
+| L15 | [25,26] | 26-27 |
+| L16 | [26] | 27 |
+| L17 | [26,27,28] | 27-29 |
+
+### Upload dans l'app
+- Bucket Supabase : `nourania-content`, chemin `lesson-{lesson_id}/{timestamp}.pdf`
+- Table : `nourania_lesson_content` (content_type = 'fichier', file_name = 'Cours PDF - Leçon N')
+- **Bouton "Import PDF en lot"** dans `AdminNouraniaContent.tsx` : sélectionner les 17 PDFs (lesson_01.pdf…) → upload automatique + remplacement des anciens (idempotent)
+- Pages 30-31 (instructions prof) et 32-34 (pages de couverture arrière) exclues
+
+### Notes de l'enseignante — realtime (màj 2026-05-06)
+- Table `nourania_commentaires_eleves` : `lecon_id`, `student_id`, `commentaire`, UNIQUE(lecon_id, student_id)
+- RLS : admin ALL · élève SELECT WHERE student_id = auth.uid()
+- **Realtime activé** (`ALTER PUBLICATION supabase_realtime ADD TABLE nourania_commentaires_eleves`) — les élèves reçoivent les notes instantanément (toast 📝 affiché, query invalidée)
+- ⚠️ Sans le `ALTER PUBLICATION`, les élèves ne voient la note qu'après rechargement de la page
+- Migration : `supabase/migrations/20260506120000_fix_commentaires_realtime.sql`
