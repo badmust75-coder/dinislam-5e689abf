@@ -65,71 +65,73 @@ const Classement = () => {
   const chargerClassement = async () => {
     setLoading(true);
 
-    // Fetch global ranking
+    // 1. Points existants (élèves ayant au moins 1 point)
     const { data: rankingData } = await supabase
       .from('student_ranking')
       .select('user_id, total_points')
-      .order('total_points', { ascending: false })
-      .limit(200);
+      .limit(500);
+    const rankingMap = new Map<string, number>(
+      (rankingData || []).map((r: any) => [r.user_id, r.total_points ?? 0])
+    );
 
-    const userIds = (rankingData || []).map(r => r.user_id);
-    let profiles: { user_id: string; full_name: string | null }[] = [];
-    if (userIds.length > 0) {
-      // Privacy: seuls les admins récupèrent tous les noms.
-      // Un élève ne reçoit que son propre profil ; les autres lignes afficheront "Élève".
-      if (isAdmin) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('user_id, full_name')
-          .in('user_id', userIds)
-          .limit(200);
-        profiles = data || [];
-      } else if (user?.id) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('user_id, full_name')
-          .eq('user_id', user.id);
-        profiles = data || [];
+    // 2. Source de vérité : TOUS les élèves approuvés
+    let profilesList: { user_id: string; full_name: string | null }[] = [];
+    if (isAdmin) {
+      // Admin : exclure les comptes admin du classement
+      const { data: adminRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin');
+      const adminIds = new Set<string>((adminRoles || []).map((r: any) => r.user_id));
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .eq('is_approved', true)
+        .limit(500);
+      profilesList = (data || []).filter(p => !adminIds.has(p.user_id));
+    } else if (user?.id) {
+      // Élève : uniquement son propre profil (privacy) + les user_ids du ranking (noms masqués)
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .eq('user_id', user.id);
+      profilesList = data || [];
+      for (const r of (rankingData || [])) {
+        if (!profilesList.find(p => p.user_id === r.user_id)) {
+          profilesList.push({ user_id: r.user_id, full_name: null });
+        }
       }
     }
 
-    const enrichis: ClassementEntry[] = (rankingData || []).map(r => ({
-      user_id: r.user_id,
-      full_name: profiles.find(p => p.user_id === r.user_id)?.full_name || null,
-      total: r.total_points ?? 0,
-    }));
+    // 3. Construire le classement complet — 0 pts pour ceux absents de student_ranking
+    const enrichis: ClassementEntry[] = profilesList
+      .map(p => ({
+        user_id: p.user_id,
+        full_name: isAdmin ? p.full_name : (p.user_id === user?.id ? p.full_name : null),
+        total: rankingMap.get(p.user_id) ?? 0,
+      }))
+      .sort((a, b) => b.total - a.total);
 
     setClassement(enrichis);
 
-    // Rank improvement toast
-    if (user) {
-      const newIndex = enrichis.findIndex(e => e.user_id === user.id);
-      const newRank = newIndex >= 0 ? newIndex + 1 : null;
-      if (newRank && newRank <= 3) {
-        // Only toast when on podium
-      }
-    }
-
-    // Fetch group members with individual rankings
+    // 4. Groupes
     const { data: groupes } = await supabase.from('student_groups').select('id, name, color');
     const { data: membres } = await supabase.from('student_group_members').select('group_id, user_id');
 
     if (groupes && membres) {
-      // Find current user's group
       const myMembership = membres.find(m => m.user_id === user?.id);
       setMyGroupId(myMembership?.group_id || null);
 
-      // Build individual member entries
       const memberEntries: GroupMemberEntry[] = [];
       for (const groupe of groupes) {
         const membreIds = membres.filter(m => m.group_id === groupe.id).map(m => m.user_id);
         for (const uid of membreIds) {
-          const ranking = enrichis.find(e => e.user_id === uid);
-          const profile = profiles.find(p => p.user_id === uid);
+          const profile = profilesList.find(p => p.user_id === uid);
           memberEntries.push({
             user_id: uid,
-            full_name: profile?.full_name || null,
-            total: ranking?.total ?? 0,
+            full_name: isAdmin ? (profile?.full_name || null) : (uid === user?.id ? profile?.full_name || null : null),
+            total: rankingMap.get(uid) ?? 0,
             group_id: groupe.id,
             group_name: groupe.name,
             group_color: groupe.color,
