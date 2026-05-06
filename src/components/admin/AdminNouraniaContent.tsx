@@ -238,6 +238,7 @@ const AdminNouraniaContent = () => {
   };
 
   // Import en lot : lesson_01.pdf → leçon 1, lesson_02.pdf → leçon 2, etc.
+  // Remplace automatiquement les PDFs existants (supprime l'ancien avant d'uploader le nouveau)
   const handleBulkUpload = useCallback(async (files: FileList) => {
     if (!user?.id || !lessons.length) return;
     const pdfFiles = Array.from(files).filter(f => f.name.match(/lesson_(\d+)\.pdf$/i));
@@ -254,15 +255,26 @@ const AdminNouraniaContent = () => {
       const lesson = lessons.find(l => l.lesson_number === lessonNum);
       if (!lesson) { toast.error(`Leçon ${lessonNum} introuvable`); continue; }
       try {
-        const existingCount = contents.filter(c => c.lesson_id === lesson.id).length;
+        // Supprimer les PDFs existants pour cette leçon (évite les doublons)
+        const existingPdfs = contents.filter(c => c.lesson_id === lesson.id && c.content_type === 'fichier');
+        for (const old of existingPdfs) {
+          try {
+            const url = new URL(old.file_url);
+            const path = url.pathname.split('/object/public/nourania-content/')[1];
+            if (path) await supabase.storage.from('nourania-content').remove([decodeURIComponent(path)]);
+          } catch { /* ignore storage delete errors */ }
+          await supabase.from('nourania_lesson_content').delete().eq('id', old.id);
+        }
+        // Upload du nouveau PDF
         const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.pdf`;
         const filePath = `lesson-${lesson.id}/${uniqueName}`;
         const { error: uploadError } = await supabase.storage.from('nourania-content').upload(filePath, file, { cacheControl: '3600', upsert: false });
         if (uploadError) { toast.error(`L${lessonNum}: ${uploadError.message}`); continue; }
         const { data: urlData } = supabase.storage.from('nourania-content').getPublicUrl(filePath);
+        const nonPdfCount = contents.filter(c => c.lesson_id === lesson.id && c.content_type !== 'fichier').length;
         const { error: insertError } = await supabase.from('nourania_lesson_content').insert({
           lesson_id: lesson.id, content_type: 'fichier', file_url: urlData.publicUrl,
-          file_name: `Cours PDF - Leçon ${lessonNum}`, display_order: existingCount, uploaded_by: user.id,
+          file_name: `Cours PDF - Leçon ${lessonNum}`, display_order: nonPdfCount, uploaded_by: user.id,
         });
         if (insertError) { toast.error(`L${lessonNum} DB: ${insertError.message}`); continue; }
         success++;
@@ -271,7 +283,7 @@ const AdminNouraniaContent = () => {
     setBulkProgress(null);
     await refetchContents();
     queryClient.invalidateQueries({ queryKey: ['nourania-lesson-contents'] });
-    toast.success(`✅ ${success}/${pdfFiles.length} PDFs importés !`);
+    toast.success(`✅ ${success}/${pdfFiles.length} PDFs remplacés !`);
   }, [user, lessons, contents, refetchContents, queryClient]);
 
   return (
