@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Eye, EyeOff, UserCheck } from 'lucide-react';
+import { Eye, EyeOff, UserCheck, FolderOpen, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
@@ -86,7 +86,9 @@ const AdminNouraniaContent = () => {
   const queryClient = useQueryClient();
   const [isUploading, setIsUploading] = useState(false);
   const [deleteContentId, setDeleteContentId] = useState<string | null>(null);
-  
+  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);
+  const bulkInputRef = useRef<HTMLInputElement>(null);
+
 
   const { data: lessons = [] } = useQuery({
     queryKey: ['admin-nourania-lessons'],
@@ -235,12 +237,82 @@ const AdminNouraniaContent = () => {
     return 'fichier';
   };
 
+  // Import en lot : lesson_01.pdf → leçon 1, lesson_02.pdf → leçon 2, etc.
+  const handleBulkUpload = useCallback(async (files: FileList) => {
+    if (!user?.id || !lessons.length) return;
+    const pdfFiles = Array.from(files).filter(f => f.name.match(/lesson_(\d+)\.pdf$/i));
+    if (!pdfFiles.length) { toast.error('Aucun fichier valide (ex: lesson_01.pdf)'); return; }
+    pdfFiles.sort((a, b) => a.name.localeCompare(b.name));
+    setBulkProgress({ current: 0, total: pdfFiles.length });
+    let success = 0;
+    for (let i = 0; i < pdfFiles.length; i++) {
+      const file = pdfFiles[i];
+      setBulkProgress({ current: i + 1, total: pdfFiles.length });
+      const match = file.name.match(/lesson_(\d+)\.pdf$/i);
+      if (!match) continue;
+      const lessonNum = parseInt(match[1], 10);
+      const lesson = lessons.find(l => l.lesson_number === lessonNum);
+      if (!lesson) { toast.error(`Leçon ${lessonNum} introuvable`); continue; }
+      try {
+        const existingCount = contents.filter(c => c.lesson_id === lesson.id).length;
+        const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.pdf`;
+        const filePath = `lesson-${lesson.id}/${uniqueName}`;
+        const { error: uploadError } = await supabase.storage.from('nourania-content').upload(filePath, file, { cacheControl: '3600', upsert: false });
+        if (uploadError) { toast.error(`L${lessonNum}: ${uploadError.message}`); continue; }
+        const { data: urlData } = supabase.storage.from('nourania-content').getPublicUrl(filePath);
+        const { error: insertError } = await supabase.from('nourania_lesson_content').insert({
+          lesson_id: lesson.id, content_type: 'fichier', file_url: urlData.publicUrl,
+          file_name: `Cours PDF - Leçon ${lessonNum}`, display_order: existingCount, uploaded_by: user.id,
+        });
+        if (insertError) { toast.error(`L${lessonNum} DB: ${insertError.message}`); continue; }
+        success++;
+      } catch { toast.error(`Erreur leçon ${lessonNum}`); }
+    }
+    setBulkProgress(null);
+    await refetchContents();
+    queryClient.invalidateQueries({ queryKey: ['nourania-lesson-contents'] });
+    toast.success(`✅ ${success}/${pdfFiles.length} PDFs importés !`);
+  }, [user, lessons, contents, refetchContents, queryClient]);
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-bold text-foreground">Gestion du contenu Nourania</h3>
       <p className="text-sm text-muted-foreground">
         Ajoutez des fichiers, vidéos YouTube ou audio pour chaque leçon.
       </p>
+
+      {/* Import en lot */}
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-2">
+        <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">📂 Import PDF en lot</p>
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          Sélectionne tous les PDFs à la fois (lesson_01.pdf, lesson_02.pdf…). Chaque PDF sera automatiquement ajouté à la bonne leçon.
+        </p>
+        <input
+          ref={bulkInputRef}
+          type="file"
+          accept=".pdf"
+          multiple
+          className="hidden"
+          onChange={(e) => { if (e.target.files?.length) handleBulkUpload(e.target.files); e.target.value = ''; }}
+        />
+        {bulkProgress ? (
+          <div className="flex items-center gap-2 text-sm text-amber-700">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Import en cours… {bulkProgress.current}/{bulkProgress.total}</span>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-amber-400 text-amber-800 hover:bg-amber-100 gap-2"
+            onClick={() => bulkInputRef.current?.click()}
+          >
+            <FolderOpen className="h-4 w-4" />
+            Sélectionner les 17 PDFs
+          </Button>
+        )}
+      </div>
+
       <div className="space-y-3">
         {lessons.map((lesson) => {
           const lessonContents = contents.filter(c => c.lesson_id === lesson.id);
