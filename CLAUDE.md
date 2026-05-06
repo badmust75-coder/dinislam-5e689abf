@@ -161,9 +161,27 @@ Toutes les mutations de validation utilisent des **mises à jour optimistes** po
 7. Grille des modules
 
 ### Détails cartes Prière & Hadith (màj 2026-05-07)
-- **Prochaine prière** : bordure indigo, fond indigo-50 pour la prière mise en avant, grille 5 colonnes (Fajr / Dohr / Asr / Maghrib / Icha), nom de ville affiché. `PRAYER_EMOJI` map pour les emojis par nom de prière.
-- **Hadith du jour** : bordure emerald, badge thème arrondi, texte arabe affiché si non vide (`font-arabic`), texte français en italique entre guillemets «», source en bas à droite. Fonction `getDayHadith()` → `HADITHS[dayOfYear % HADITHS.length]`.
+- **Prochaine prière** : fond dégradé pastel violet-indigo-bleu (100), dates grégorienne (`text-base` gras) et hégirienne (`text-sm`) centrées au-dessus du titre. Grille 5 pastilles colorées (Fajr violet / Dohr ambre / Asr teal / Maghrib orange / Icha indigo). `PRAYER_EMOJI` map, `getSavedCity()` lit `localStorage['dinislam_prayer_city']`. Dates via `getGregorianDate()` (Intl fr-FR) et `getHijriDate()` (Intl `en-u-ca-islamic` + `HIJRI_MONTHS` array 12 mois français).
+- **Hadith du jour** : fond dégradé pastel emerald-teal-cyan (100), badge thème arrondi, texte arabe en vert foncé, guillemet décorative grande. Fonction `getDayHadith()` → `HADITHS[dayOfYear % HADITHS.length]`.
 - La ville se lit dans `getSavedCity()` (même clé que `Priere.tsx` : `dinislam_prayer_city`). Si aucune ville sauvegardée → Montpellier par défaut.
+
+## Bouton Zoom dans le header (màj 2026-05-07)
+- Icône SVG inline `ZoomIcon` (caméra bleue #2D8CFF, rx=4) dans `Header.tsx`
+- Constante `ZOOM_URL` en haut du fichier — changer ici si le lien Zoom change
+- Bouton visible pour **tous** les utilisateurs (admin et élèves), placé avant le trophée 🏆
+- Ouvre dans un nouvel onglet (`window.open`, `noopener,noreferrer`)
+
+## Classement — règles de rang (màj 2026-05-07)
+- **Dense ranking** : `getDenseRanks<T extends {total:number}>(sortedArr)` → même rang pour même score (ex: 2 élèves à 10pts = tous les deux 8ème). Appliqué en vue globale, groupes admin, groupe élève.
+- **Tous les élèves** dans le classement global : on part de `profiles.is_approved=true` (hors admins via `user_roles`) puis on joint `student_ranking`. Élèves à 0 pts apparaissent en bas.
+- **Médailles** : `getMedaille(rank)` prend un rang 1-based (1=🥇, 2=🥈, 3=🥉).
+- Bannière "Ma position" utilise `myGlobalDenseRank` (dense rank, pas `myGlobalIndex+1`).
+
+## Registre de présence — tri par groupes (màj 2026-05-07)
+- `AdminAttendance.tsx` charge `student_groups` + `student_group_members` via une query `attendance-group-members`
+- Memo `groupedStudents` : pour chaque groupe (trié par nom), liste des élèves membres. Élèves sans groupe dans une section "Sans groupe" en bas.
+- Rendu : bandeau coloré (couleur du groupe) entre chaque groupe avec `👥 NomGroupe — N élèves`. Numérotation 1, 2, 3... par groupe.
+- Si aucun groupe créé, affiche tous les élèves sans séparateur (comportement d'origine).
 
 ## Cartes admin-only
 
