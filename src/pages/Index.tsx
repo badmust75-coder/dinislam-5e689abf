@@ -8,6 +8,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import HomeworkCard from '@/components/homework/HomeworkCard';
 import BlocDevoirsEleve from '@/components/homework/BlocDevoirsEleve';
 import { useUserProgress } from '@/hooks/useUserProgress';
+import { usePrayerTimesCity, CITIES, CityOption } from '@/hooks/usePrayerTimesCity';
 import { cn } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,6 +18,77 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from
 '@/components/ui/dropdown-menu';
+
+const PRAYER_EMOJI: Record<string, string> = {
+  'Sobh (Fajr)': '🌅',
+  'Lever du soleil': '🌄',
+  'Dohr': '☀️',
+  'Asr': '🍃',
+  'Maghreb': '🌇',
+  'Icha': '🌙',
+};
+
+const HADITHS = [
+  { text: "Les actions ne valent que par leurs intentions.", source: "Sahih Boukhari", theme: "Intention", arabic: "إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ" },
+  { text: "Facilite les choses et ne les complique pas. Réjouis les gens et ne les fais pas fuir.", source: "Sahih Boukhari", theme: "Douceur", arabic: "يَسِّرُوا وَلَا تُعَسِّرُوا" },
+  { text: "Le plus aimé parmi vous auprès d'Allah est celui qui a le meilleur caractère.", source: "Sahih Boukhari", theme: "Caractère", arabic: "" },
+  { text: "Cherche la science du berceau jusqu'à la tombe.", source: "Sagesse islamique", theme: "Savoir", arabic: "اطلب العلم من المهد إلى اللحد" },
+  { text: "Nul d'entre vous n'est croyant tant qu'il n'aime pas pour son frère ce qu'il aime pour lui-même.", source: "Sahih Boukhari", theme: "Fraternité", arabic: "" },
+  { text: "Le Musulman est celui dont les autres Musulmans sont préservés de sa langue et de sa main.", source: "Sahih Boukhari", theme: "Bienveillance", arabic: "" },
+  { text: "Souriez à votre frère, c'est de la charité.", source: "Tirmidhi", theme: "Générosité", arabic: "تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ صَدَقَةٌ" },
+  { text: "Le paradis se trouve sous les pieds des mères.", source: "Nasaï", theme: "Famille", arabic: "الجَنَّةُ تَحْتَ أَقْدَامِ الأُمَّهَاتِ" },
+  { text: "Soyez bons envers vos parents, et vos enfants seront bons envers vous.", source: "Sagesse islamique", theme: "Parents", arabic: "" },
+  { text: "Celui qui ne remercie pas les gens ne remercie pas Allah.", source: "Tirmidhi", theme: "Gratitude", arabic: "مَنْ لَمْ يَشْكُرِ النَّاسَ لَمْ يَشْكُرِ اللَّه" },
+  { text: "La propreté est la moitié de la foi.", source: "Sahih Muslim", theme: "Pureté", arabic: "الطَّهُورُ شَطْرُ الإِيمَانِ" },
+  { text: "Le fort n'est pas celui qui terrasse les gens, mais celui qui se maîtrise quand il est en colère.", source: "Sahih Boukhari", theme: "Maîtrise de soi", arabic: "" },
+  { text: "Dis la vérité même si elle est amère.", source: "Ibn Hibbane", theme: "Honnêteté", arabic: "قُلِ الحَقَّ وَلَوْ كَانَ مُرًّا" },
+  { text: "Quiconque croit en Allah et au Jour dernier doit honorer son voisin.", source: "Sahih Boukhari", theme: "Voisinage", arabic: "" },
+  { text: "La miséricorde n'est accordée qu'à ceux qui sont miséricordieux.", source: "Tirmidhi", theme: "Miséricorde", arabic: "" },
+  { text: "Le meilleur des gens est celui qui est le plus utile aux autres.", source: "Tabarani", theme: "Utilité", arabic: "خَيْرُ النَّاسِ أَنْفَعُهُمْ لِلنَّاسِ" },
+  { text: "Ne méprise aucune bonne action, même si c'est d'accueillir ton frère avec un visage souriant.", source: "Sahih Muslim", theme: "Bonne action", arabic: "" },
+  { text: "Aide ton frère, qu'il soit oppresseur ou opprimé.", source: "Sahih Boukhari", theme: "Fraternité", arabic: "" },
+  { text: "Le croyant ne se mord pas deux fois au même endroit.", source: "Sahih Boukhari", theme: "Sagesse", arabic: "" },
+  { text: "Parle bien ou garde le silence.", source: "Sahih Boukhari & Muslim", theme: "Parole", arabic: "قُلْ خَيْرًا أَوِ اصْمُتْ" },
+  { text: "Respectez vos aînés, soyez bienveillants envers vos cadets, vous entrerez au Paradis.", source: "Tirmidhi", theme: "Respect", arabic: "" },
+  { text: "Celui qui se lève le matin sans soucier du bien des musulmans n'est pas des nôtres.", source: "Bayhaqi", theme: "Solidarité", arabic: "" },
+  { text: "Il n'y a pas de bien dans celui qui ne fait pas confiance et en qui on ne peut pas avoir confiance.", source: "Ahmad", theme: "Confiance", arabic: "" },
+  { text: "Craignez Allah où que vous soyez, et faites suivre la mauvaise action d'une bonne qui l'effacera.", source: "Tirmidhi", theme: "Taqwa", arabic: "اتَّقِ اللَّهَ حَيْثُمَا كُنْتَ" },
+  { text: "Le savant dépasse l'adorateur comme la lune dépasse les autres étoiles.", source: "Tirmidhi", theme: "Savoir", arabic: "" },
+  { text: "Celui qui suit une voie pour y chercher un savoir, Allah lui facilite une voie vers le Paradis.", source: "Sahih Muslim", theme: "Savoir", arabic: "" },
+  { text: "Prenez soin de votre corps, car il vous a été confié.", source: "Sagesse islamique", theme: "Santé", arabic: "" },
+  { text: "Ne regardez pas vers ceux qui sont au-dessus de vous, regardez vers ceux qui sont en dessous.", source: "Sahih Boukhari", theme: "Gratitude", arabic: "" },
+  { text: "Deux paroles légères sur la langue, lourdes dans la balance : Soubhana Allah wa bihamdihi, Soubhana Allah il Adhim.", source: "Sahih Boukhari", theme: "Dhikr", arabic: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ" },
+  { text: "Commencez tout acte important par Bismillah.", source: "Sagesse islamique", theme: "Basmala", arabic: "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ" },
+  { text: "L'inégalité entre les croyants dans leurs actes de dévotion est comme l'inégalité de la lune et des étoiles.", source: "Tirmidhi", theme: "Dévotion", arabic: "" },
+  { text: "Soyez dans ce monde comme un étranger ou un voyageur de passage.", source: "Sahih Boukhari", theme: "Zuhd", arabic: "" },
+  { text: "Quiconque construit une mosquée pour Allah, Allah lui construira une maison au Paradis.", source: "Sahih Boukhari", theme: "Mosquée", arabic: "" },
+  { text: "Visitez les malades, nourrissez ceux qui ont faim et libérez les captifs.", source: "Sahih Boukhari", theme: "Humanité", arabic: "" },
+  { text: "L'Islam est fondé sur cinq piliers : la Shahada, la prière, la zakat, le jeûne et le pèlerinage.", source: "Sahih Boukhari", theme: "Pilliers", arabic: "" },
+  { text: "Dis : Allahouma inni as'alouka al-huda wa at-touqa wa al-afafa wa al-ghina.", source: "Sahih Muslim", theme: "Invocation", arabic: "اللَّهُمَّ إِنِّي أَسْأَلُكَ الهُدَى وَالتُّقَى" },
+  { text: "Le meilleur de vous est celui qui apprend le Coran et l'enseigne.", source: "Sahih Boukhari", theme: "Coran", arabic: "خَيْرُكُمْ مَنْ تَعَلَّمَ القُرْآنَ وَعَلَّمَهُ" },
+  { text: "Toute bonne action est de la charité.", source: "Sahih Boukhari", theme: "Générosité", arabic: "كُلُّ مَعْرُوفٍ صَدَقَةٌ" },
+  { text: "Récompensez-vous les uns les autres par des cadeaux, vous vous aimerez.", source: "Boukhari al-Adab", theme: "Générosité", arabic: "تَهَادَوْا تَحَابُّوا" },
+  { text: "Invoque Allah avec la certitude d'être exaucé.", source: "Tirmidhi", theme: "Dou'a", arabic: "" },
+];
+
+function getSavedCity(): CityOption {
+  try {
+    const saved = localStorage.getItem('dinislam_prayer_city');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.lat && parsed.lon) return parsed;
+    }
+  } catch {}
+  return CITIES.find(c => c.label.includes('Montpellier')) ?? CITIES[0];
+}
+
+function getDayHadith() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now.getTime() - start.getTime();
+  const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+  return HADITHS[dayOfYear % HADITHS.length];
+}
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users, Sun, MessageCircle, Book, Languages, Library, RefreshCw, Feather, BookHeart, NotebookPen, ClipboardList, ScrollText
@@ -55,6 +127,11 @@ const Index = () => {
   const [showNotifBanner, setShowNotifBanner] = useState(false);
   const [activatingNotif, setActivatingNotif] = useState(false);
   const { data: progress } = useUserProgress();
+
+  const [prayerCity] = useState<CityOption>(getSavedCity);
+  const { prayerTimes, getNextPrayer } = usePrayerTimesCity(prayerCity);
+  const nextPrayer = getNextPrayer();
+  const todayHadith = getDayHadith();
 
   // Fetch modules from DB
   const { data: modules } = useQuery({
@@ -232,6 +309,67 @@ const handleModuleClick = (mod: any) => {
             <p className="font-arabic text-gold mt-2 text-3xl">
               بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
             </p>
+          </div>
+
+          {/* Prochaine Prière */}
+          <div className="bg-card rounded-2xl p-4 shadow-card border border-indigo-200 dark:border-indigo-800 animate-fade-in">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h3 className="font-bold text-foreground flex items-center gap-2">
+                🕌 Prochaine prière
+              </h3>
+              <span className="text-xs text-muted-foreground">{prayerCity.label}</span>
+            </div>
+            {!prayerTimes ? (
+              <p className="text-sm text-muted-foreground text-center py-2">Chargement des horaires...</p>
+            ) : (
+              <>
+                {nextPrayer && (
+                  <div className="flex items-center justify-center gap-3 mb-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl py-3">
+                    <span className="text-3xl">{PRAYER_EMOJI[nextPrayer.name] ?? '🕌'}</span>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Prochaine</p>
+                      <p className="font-bold text-lg text-indigo-700 dark:text-indigo-300">{nextPrayer.name}</p>
+                      <p className="text-2xl font-bold text-foreground">{nextPrayer.time}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-5 gap-1 text-center">
+                  {[
+                    { name: 'Fajr', time: prayerTimes.fajr },
+                    { name: 'Dohr', time: prayerTimes.dhuhr },
+                    { name: 'Asr', time: prayerTimes.asr },
+                    { name: 'Maghrib', time: prayerTimes.maghrib },
+                    { name: 'Icha', time: prayerTimes.isha },
+                  ].map(p => (
+                    <div key={p.name} className="bg-muted/50 rounded-lg py-1.5 px-0.5">
+                      <p className="text-[10px] text-muted-foreground">{p.name}</p>
+                      <p className="text-xs font-semibold text-foreground">{p.time}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Hadith du Jour */}
+          <div className="bg-card rounded-2xl p-4 shadow-card border border-emerald-200 dark:border-emerald-800 animate-fade-in">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h3 className="font-bold text-foreground flex items-center gap-2">
+                🕊️ Hadith du jour
+              </h3>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-medium shrink-0">
+                {todayHadith.theme}
+              </span>
+            </div>
+            {todayHadith.arabic && (
+              <p className="font-arabic text-right text-base text-emerald-700 dark:text-emerald-300 mb-2 leading-loose">
+                {todayHadith.arabic}
+              </p>
+            )}
+            <p className="text-sm text-foreground italic mb-2">
+              « {todayHadith.text} »
+            </p>
+            <p className="text-xs text-muted-foreground text-right">— {todayHadith.source}</p>
           </div>
 
           {/* Quick Stats - right after welcome message */}
