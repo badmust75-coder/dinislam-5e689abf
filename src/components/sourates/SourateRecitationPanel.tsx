@@ -32,9 +32,10 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mimeTypeRef = useRef<string>('audio/webm');
 
-  const getBestMimeType = (): string => {
-    const candidates = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'];
-    return candidates.find(t => MediaRecorder.isTypeSupported(t)) ?? 'audio/webm';
+  const getExtFromMime = (mime: string): string => {
+    if (mime.includes('mp4') || mime.includes('m4a')) return 'm4a';
+    if (mime.includes('ogg')) return 'ogg';
+    return 'webm';
   };
 
   const extractStoragePath = (url: string): string | null => {
@@ -90,9 +91,9 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       chunksRef.current = [];
-      const mimeType = getBestMimeType();
-      mimeTypeRef.current = mimeType;
-      const mr = new MediaRecorder(stream, { mimeType });
+      // Laisser le navigateur choisir son format natif, puis lire mr.mimeType
+      const mr = new MediaRecorder(stream);
+      mimeTypeRef.current = mr.mimeType || 'audio/webm';
       mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current });
@@ -127,8 +128,7 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
     if (!recorded || !user) return;
     setUploading(true);
     try {
-      const ext = mimeTypeRef.current.includes('mp4') ? 'm4a'
-        : mimeTypeRef.current.includes('ogg') ? 'ogg' : 'webm';
+      const ext = getExtFromMime(mimeTypeRef.current);
       const filename = `${user.id}/${sourateId}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from('recitations')
