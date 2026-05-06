@@ -349,9 +349,9 @@ const handleModuleClick = (mod: any) => {
                 <span className="absolute top-2 left-1/2 text-xl">✨</span>
               </div>
               <div className="relative text-center mb-2">
-                <p className="text-sm font-bold text-indigo-800 dark:text-indigo-100 capitalize">{getGregorianDate()}</p>
+                <p className="text-base font-bold text-indigo-800 dark:text-indigo-100 capitalize">{getGregorianDate()}</p>
                 {getHijriDate() && (
-                  <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-0.5">{getHijriDate()}</p>
+                  <p className="text-sm text-indigo-500 dark:text-indigo-400 mt-0.5">{getHijriDate()}</p>
                 )}
               </div>
               <div className="relative flex items-center justify-between">

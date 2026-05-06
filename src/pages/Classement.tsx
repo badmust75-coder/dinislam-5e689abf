@@ -30,12 +30,22 @@ interface GroupMemberEntry {
   group_color: string | null;
 }
 
-const getMedaille = (index: number) => {
-  if (index === 0) return { bg: 'hsl(48 96% 89%)', border: 'hsl(38 92% 50%)', emoji: '🥇', textColor: 'hsl(26 90% 37%)' };
-  if (index === 1) return { bg: 'hsl(210 40% 96%)', border: 'hsl(215 16% 57%)', emoji: '🥈', textColor: 'hsl(215 25% 35%)' };
-  if (index === 2) return { bg: 'hsl(293 100% 98%)', border: 'hsl(270 70% 72%)', emoji: '🥉', textColor: 'hsl(273 72% 47%)' };
+const getMedaille = (rank: number) => {
+  if (rank === 1) return { bg: 'hsl(48 96% 89%)', border: 'hsl(38 92% 50%)', emoji: '🥇', textColor: 'hsl(26 90% 37%)' };
+  if (rank === 2) return { bg: 'hsl(210 40% 96%)', border: 'hsl(215 16% 57%)', emoji: '🥈', textColor: 'hsl(215 25% 35%)' };
+  if (rank === 3) return { bg: 'hsl(293 100% 98%)', border: 'hsl(270 70% 72%)', emoji: '🥉', textColor: 'hsl(273 72% 47%)' };
   return { bg: 'hsl(138 76% 97%)', border: 'hsl(142 69% 73%)', emoji: null, textColor: 'hsl(143 64% 24%)' };
 };
+
+function getDenseRanks<T extends { total: number }>(sortedArr: T[]): number[] {
+  const ranks: number[] = [];
+  let rank = 1;
+  for (let i = 0; i < sortedArr.length; i++) {
+    if (i > 0 && sortedArr[i].total < sortedArr[i - 1].total) rank++;
+    ranks.push(rank);
+  }
+  return ranks;
+}
 
 const Classement = () => {
   const { user, isAdmin } = useAuth();
@@ -176,6 +186,8 @@ const Classement = () => {
 
   const myRankInGroup = myGroupMembers.findIndex(m => m.user_id === user?.id);
   const myGlobalIndex = classement.findIndex(e => e.user_id === user?.id);
+  const globalRanks = getDenseRanks(classement);
+  const myGlobalDenseRank = myGlobalIndex >= 0 ? globalRanks[myGlobalIndex] : -1;
 
   return (
     <AppLayout>
@@ -196,7 +208,7 @@ const Classement = () => {
             style={{ backgroundColor: 'hsl(48 96% 89%)', border: '2px solid hsl(38 92% 50%)' }}>
             <p className="text-2xl">⭐</p>
             <p className="font-bold text-foreground text-lg">
-              {myGlobalIndex === 0 ? '1er' : `${myGlobalIndex + 1}ème`} au classement général
+              {myGlobalDenseRank === 1 ? '1er' : `${myGlobalDenseRank}ème`} au classement général
             </p>
             <p className="text-sm text-muted-foreground">{classement[myGlobalIndex].total} points</p>
           </div>
@@ -240,7 +252,8 @@ const Classement = () => {
           ) : (
             <div className="space-y-2">
               {classement.map((eleve, index) => {
-                const m = getMedaille(index);
+                const rank = globalRanks[index];
+                const m = getMedaille(rank);
                 const isMe = eleve.user_id === user?.id;
                 return (
                   <div
@@ -251,7 +264,7 @@ const Classement = () => {
                       borderColor: isMe ? 'hsl(38 92% 50%)' : m.border,
                     }}>
                     <span className="text-xl w-8 text-center font-bold">
-                      {m.emoji || `${index + 1}.`}
+                      {m.emoji || `${rank}.`}
                     </span>
                     <div className="flex-1">
                       <p className="font-semibold text-sm" style={{ color: m.textColor }}>
@@ -282,13 +295,14 @@ const Classement = () => {
                       👥 {groupe.group_name} — {groupe.members.length} membre{groupe.members.length > 1 ? 's' : ''}
                     </div>
                     <div className="divide-y divide-border">
-                      {groupe.members.map((m, index) => {
-                        const med = getMedaille(index);
+                      {(() => { const groupRanks = getDenseRanks(groupe.members); return groupe.members.map((m, index) => {
+                        const rank = groupRanks[index];
+                        const med = getMedaille(rank);
                         return (
                           <div key={m.user_id} className="flex items-center gap-3 px-4 py-2"
                             style={{ backgroundColor: med.bg }}>
                             <span className="text-lg w-6 text-center font-bold">
-                              {med.emoji || `${index + 1}.`}
+                              {med.emoji || `${rank}.`}
                             </span>
                             <span className="flex-1 text-sm font-medium" style={{ color: med.textColor }}>
                               {m.full_name || 'Élève'}
@@ -298,7 +312,7 @@ const Classement = () => {
                             </span>
                           </div>
                         );
-                      })}
+                      }); })()}
                     </div>
                   </div>
                 ))}
@@ -321,14 +335,15 @@ const Classement = () => {
                   👥 {myGroupMembers[0]?.group_name} — {myGroupMembers.length} membre{myGroupMembers.length > 1 ? 's' : ''}
                 </div>
                 <div className="divide-y divide-border">
-                  {myGroupMembers.map((membre, index) => {
-                    const med = getMedaille(index);
+                  {(() => { const groupRanks = getDenseRanks(myGroupMembers); return myGroupMembers.map((membre, index) => {
+                    const rank = groupRanks[index];
+                    const med = getMedaille(rank);
                     const isMe = membre.user_id === user?.id;
                     return (
                       <div key={membre.user_id} className="flex items-center gap-3 px-4 py-2"
                         style={{ backgroundColor: isMe ? 'hsl(48 96% 89%)' : med.bg }}>
                         <span className="text-lg w-6 text-center font-bold">
-                          {med.emoji || `${index + 1}.`}
+                          {med.emoji || `${rank}.`}
                         </span>
                         <span className="flex-1 text-sm font-medium" style={{ color: isMe ? 'hsl(26 90% 37%)' : med.textColor }}>
                           {isMe ? 'Moi' : 'Élève'}
@@ -338,7 +353,7 @@ const Classement = () => {
                         </span>
                       </div>
                     );
-                  })}
+                  }); })()}
                 </div>
               </div>
             )
