@@ -14,6 +14,16 @@ import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts';
 import { useMonitoringErrorCount } from '@/hooks/useMonitoringErrorCount';
 import AdminCommandModal from '@/components/admin/AdminCommandModal';
 
+const ZOOM_URL = 'https://us06web.zoom.us/j/4080361371?pwd=UHVDc1o0RDE3WFBmNTBNTENaMDJnUT09';
+
+const ZoomIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <rect width="20" height="20" rx="4" fill="#2D8CFF"/>
+    <rect x="2.5" y="5.5" width="9.5" height="9" rx="1.5" fill="white"/>
+    <path d="M13.5 8.2l3.8-2.2v7.8l-3.8-2.2V8.2z" fill="white"/>
+  </svg>
+);
+
 interface HeaderProps {
   title?: string;
   showBack?: boolean;
@@ -68,6 +78,14 @@ const Header = ({
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </Badge>
               )}
+            </Button>
+            <Button
+              variant="ghost" size="icon"
+              onClick={() => window.open(ZOOM_URL, '_blank', 'noopener,noreferrer')}
+              className="hover:bg-primary-foreground/10 p-1"
+              title="Rejoindre le cours Zoom"
+            >
+              <ZoomIcon />
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/classement')} className="text-primary-foreground hover:bg-primary-foreground/10">
               <Trophy className="h-5 w-5" />
