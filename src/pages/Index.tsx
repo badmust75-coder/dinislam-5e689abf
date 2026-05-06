@@ -313,26 +313,26 @@ const handleModuleClick = (mod: any) => {
 
           {/* Prochaine Prière */}
           <div className="rounded-2xl overflow-hidden shadow-md animate-fade-in">
-            {/* Header dégradé */}
-            <div className="bg-gradient-to-r from-violet-500 via-indigo-500 to-blue-500 px-4 pt-4 pb-6 relative">
-              <div className="absolute inset-0 opacity-20 pointer-events-none select-none overflow-hidden">
+            {/* Header dégradé pastel */}
+            <div className="bg-gradient-to-r from-violet-100 via-indigo-100 to-blue-100 dark:from-violet-900/40 dark:via-indigo-900/40 dark:to-blue-900/40 px-4 pt-4 pb-6 relative">
+              <div className="absolute inset-0 opacity-40 pointer-events-none select-none overflow-hidden">
                 <span className="absolute top-1 right-3 text-4xl">🌙</span>
                 <span className="absolute bottom-1 left-2 text-2xl">⭐</span>
                 <span className="absolute top-2 left-1/2 text-xl">✨</span>
               </div>
               <div className="relative flex items-center justify-between">
-                <h3 className="font-bold text-white text-base flex items-center gap-2">
+                <h3 className="font-bold text-indigo-800 dark:text-indigo-200 text-base flex items-center gap-2">
                   🕌 Prochaine prière
                 </h3>
-                <span className="text-xs text-white/70 bg-white/20 px-2 py-0.5 rounded-full">{prayerCity.label}</span>
+                <span className="text-xs text-indigo-500 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-800/50 px-2 py-0.5 rounded-full">{prayerCity.label}</span>
               </div>
               {nextPrayer && (
                 <div className="relative mt-3 flex items-center justify-center gap-4">
                   <span className="text-5xl drop-shadow">{PRAYER_EMOJI[nextPrayer.name] ?? '🕌'}</span>
                   <div>
-                    <p className="text-white/70 text-xs font-medium uppercase tracking-wide">Prochaine</p>
-                    <p className="text-white font-extrabold text-xl leading-tight">{nextPrayer.name}</p>
-                    <p className="text-white font-black text-4xl leading-none">{nextPrayer.time}</p>
+                    <p className="text-indigo-400 dark:text-indigo-400 text-xs font-medium uppercase tracking-wide">Prochaine</p>
+                    <p className="text-indigo-700 dark:text-indigo-200 font-extrabold text-xl leading-tight">{nextPrayer.name}</p>
+                    <p className="text-indigo-900 dark:text-white font-black text-4xl leading-none">{nextPrayer.time}</p>
                   </div>
                 </div>
               )}
@@ -363,22 +363,22 @@ const handleModuleClick = (mod: any) => {
 
           {/* Hadith du Jour */}
           <div className="rounded-2xl overflow-hidden shadow-md animate-fade-in">
-            {/* Header dégradé vert */}
-            <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 px-4 py-4 relative">
-              <div className="absolute inset-0 opacity-20 pointer-events-none select-none overflow-hidden">
+            {/* Header dégradé vert pastel */}
+            <div className="bg-gradient-to-r from-emerald-100 via-teal-100 to-cyan-100 dark:from-emerald-900/40 dark:via-teal-900/40 dark:to-cyan-900/40 px-4 py-4 relative">
+              <div className="absolute inset-0 opacity-40 pointer-events-none select-none overflow-hidden">
                 <span className="absolute top-1 right-3 text-3xl">🌿</span>
                 <span className="absolute bottom-0 left-2 text-2xl">🕊️</span>
               </div>
               <div className="relative flex items-center justify-between">
-                <h3 className="font-bold text-white text-base flex items-center gap-2">
+                <h3 className="font-bold text-emerald-800 dark:text-emerald-200 text-base flex items-center gap-2">
                   🕊️ Hadith du jour
                 </h3>
-                <span className="text-xs text-white font-semibold bg-white/25 px-2.5 py-0.5 rounded-full shrink-0">
+                <span className="text-xs text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-200 dark:bg-emerald-800/50 px-2.5 py-0.5 rounded-full shrink-0">
                   {todayHadith.theme}
                 </span>
               </div>
               {todayHadith.arabic && (
-                <p className="font-arabic text-right text-lg text-white/90 mt-2 leading-loose">
+                <p className="font-arabic text-right text-lg text-emerald-800 dark:text-emerald-200 mt-2 leading-loose">
                   {todayHadith.arabic}
                 </p>
               )}
