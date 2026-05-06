@@ -71,6 +71,34 @@ const HADITHS = [
   { text: "Invoque Allah avec la certitude d'être exaucé.", source: "Tirmidhi", theme: "Dou'a", arabic: "" },
 ];
 
+const HIJRI_MONTHS = [
+  'Mouharram', 'Safar', "Rabi' Al Awwal", "Rabi' Al Thani",
+  'Joumada Al Oula', 'Joumada Al Akhira', 'Rajab', "Cha'bane",
+  'Ramadan', 'Chawwal', "Dhou Al Qi'da", 'Dhou Al Hijja',
+];
+
+function getGregorianDate(): string {
+  const raw = new Date().toLocaleDateString('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+function getHijriDate(): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-u-ca-islamic', {
+      day: 'numeric', month: 'numeric', year: 'numeric',
+    }).formatToParts(new Date());
+    const day = parts.find(p => p.type === 'day')?.value;
+    const month = parts.find(p => p.type === 'month')?.value;
+    const year = parts.find(p => p.type === 'year')?.value?.replace(/\D/g, '');
+    if (day && month && year) {
+      return `${day} ${HIJRI_MONTHS[parseInt(month) - 1] ?? ''} ${year}`;
+    }
+  } catch {}
+  return '';
+}
+
 function getSavedCity(): CityOption {
   try {
     const saved = localStorage.getItem('dinislam_prayer_city');
@@ -319,6 +347,12 @@ const handleModuleClick = (mod: any) => {
                 <span className="absolute top-1 right-3 text-4xl">🌙</span>
                 <span className="absolute bottom-1 left-2 text-2xl">⭐</span>
                 <span className="absolute top-2 left-1/2 text-xl">✨</span>
+              </div>
+              <div className="relative text-center mb-2">
+                <p className="text-sm font-bold text-indigo-800 dark:text-indigo-100 capitalize">{getGregorianDate()}</p>
+                {getHijriDate() && (
+                  <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-0.5">{getHijriDate()}</p>
+                )}
               </div>
               <div className="relative flex items-center justify-between">
                 <h3 className="font-bold text-indigo-800 dark:text-indigo-200 text-base flex items-center gap-2">
