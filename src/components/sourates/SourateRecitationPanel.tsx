@@ -34,12 +34,18 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const mimeTypeRef = useRef<string>('audio/webm');
+  const mimeTypeRef = useRef<string>('');
 
   const getExtFromMime = (mime: string): string => {
-    if (mime.includes('mp4') || mime.includes('m4a')) return 'm4a';
+    if (mime.includes('mp4') || mime.includes('m4a')) return 'mp4';
     if (mime.includes('ogg')) return 'ogg';
     return 'webm';
+  };
+
+  // Choisit le meilleur format supporté — mp4 en priorité pour iOS/Safari
+  const pickMimeType = (): string => {
+    const candidates = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
+    return candidates.find(t => MediaRecorder.isTypeSupported(t)) ?? '';
   };
 
   const extractStoragePath = (url: string): string | null => {
@@ -123,14 +129,23 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       chunksRef.current = [];
-      // Laisser le navigateur choisir son format natif, puis lire mr.mimeType
-      const mr = new MediaRecorder(stream);
-      mimeTypeRef.current = mr.mimeType || 'audio/webm';
+
+      // 1. Choisir le meilleur format (mp4 pour iOS, webm pour Chrome/Firefox)
+      const preferred = pickMimeType();
+      let mr: MediaRecorder;
+      try {
+        mr = preferred ? new MediaRecorder(stream, { mimeType: preferred }) : new MediaRecorder(stream);
+      } catch {
+        mr = new MediaRecorder(stream); // Fallback sans forcer le format
+      }
+
+      // 2. Lire le mimeType réel APRÈS start() — iOS le définit à ce moment-là
       mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current });
+        const mime = mimeTypeRef.current || 'audio/mp4';
+        const blob = new Blob(chunksRef.current, { type: mime });
         stream.getTracks().forEach(t => t.stop());
-        // Attendre la data URL avant de rendre l'audio — évite src=null sur iOS
+        // data URL (base64) — seul format garanti lisible sur iOS WKWebView
         const reader = new FileReader();
         reader.onload = (e) => {
           setRecorded(blob);
@@ -138,8 +153,12 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
         };
         reader.readAsDataURL(blob);
       };
+
       mediaRecorderRef.current = mr;
       mr.start();
+      // Lire après start() : sur iOS mr.mimeType peut être vide avant
+      mimeTypeRef.current = mr.mimeType || preferred || 'audio/mp4';
+
       setRecording(true);
       setSeconds(0);
       timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
@@ -165,11 +184,13 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
     if (!recorded || !user) return;
     setUploading(true);
     try {
-      const ext = getExtFromMime(mimeTypeRef.current);
+      const mime = mimeTypeRef.current || 'audio/mp4';
+      const baseMime = mime.split(';')[0]; // supprimer les paramètres de codec
+      const ext = getExtFromMime(baseMime);
       const filename = `${user.id}/${sourateId}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from('recitations')
-        .upload(filename, recorded, { contentType: mimeTypeRef.current, upsert: false });
+        .upload(filename, recorded, { contentType: baseMime, upsert: false });
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from('recitations').getPublicUrl(filename);
